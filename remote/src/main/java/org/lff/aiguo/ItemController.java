@@ -124,19 +124,28 @@ public class ItemController {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] buffer = new byte[32 * 1024];
-        int len = 0;
-        while (len > -1) {
-            try {
-                len = pis.read(buffer);
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            int length = pis.available();
+
+            while (length > 0) {
+                int len = 0;
+                try {
+                    len = pis.read(buffer);
+                    length -= len;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (len > 0) {
+                    out.write(buffer, 0, len);
+                } else {
+                    break;
+                }
             }
-            if (len > 0) {
-                out.write(buffer, 0, len);
-            } else {
-                break;
-            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
 
         logger.info("Fetch Result = " + new String(out.toByteArray()));
 

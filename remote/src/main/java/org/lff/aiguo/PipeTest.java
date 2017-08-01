@@ -14,7 +14,9 @@ public class PipeTest {
         PipedInputStream pin = new PipedInputStream(out);
 
         out.write("Aaaaaaaaaaaa".getBytes());
-        int d = pin.read();
-        System.out.println(d);
+       // int d = pin.read();
+       // System.out.println(d);
+
+        System.out.println(pin.available());
     }
 }
