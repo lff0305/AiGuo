@@ -41,7 +41,7 @@ public class ItemController {
     public @ResponseBody
     String doit(@RequestBody String body) throws IOException {
 
-        logger.info("Getting a request.");
+        logger.info("Getting a request for work");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a request json {}", o.toString());
@@ -72,7 +72,7 @@ public class ItemController {
     @RequestMapping(path = "/g", method = RequestMethod.POST)
     public @ResponseBody
     String connect(@RequestBody String body) throws IOException {
-        logger.info("Getting a request.");
+        logger.info("Getting a request for connect");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a request json {}", o.toString());
@@ -104,7 +104,7 @@ public class ItemController {
 
         socketsMap.put(uid, worker);
         PipedOutputStream out = new PipedOutputStream();
-        bufferMap.put(uid, new PipedInputStream(out));
+        bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
 
         ContentReader reader = new ContentReader(worker.getInputStream(), out);
         new Thread(reader).start();
@@ -127,6 +127,8 @@ public class ItemController {
         try {
             int length = pis.available();
 
+            logger.info("Availbytes {}", length);
+
             while (length > 0) {
                 int len = 0;
                 try {
@@ -147,8 +149,9 @@ public class ItemController {
         }
 
 
-        logger.info("Fetch Result = " + new String(out.toByteArray()));
+        byte[] bytes = out.toByteArray();
+        logger.info("Fetch Result = " + bytes.length);
 
-        return Base64.getEncoder().encodeToString(out.toByteArray());
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

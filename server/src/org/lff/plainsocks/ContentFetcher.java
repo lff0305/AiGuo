@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Feifei Liu
@@ -23,10 +24,12 @@ public class ContentFetcher implements Runnable{
 
     private String uid;
     private OutputStream outputStream;
+    private AtomicBoolean stopped;
 
-    public ContentFetcher(String uid, OutputStream outputStream) {
+    public ContentFetcher(String uid, OutputStream outputStream, AtomicBoolean stopped) {
         this.uid = uid;
         this.outputStream = outputStream;
+        this.stopped = stopped;
     }
 
     @Override
@@ -34,7 +37,8 @@ public class ContentFetcher implements Runnable{
 
         logger.info("Fetcher started.");
 
-        while (true) {
+        int emptyCount = 0;
+        while (!stopped.get() && emptyCount < 3) {
             try {
 
                 JSONObject o = new JSONObject();
@@ -47,8 +51,21 @@ public class ContentFetcher implements Runnable{
                 HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
                         .body(cipher.encode(body))
                         .asString();
-                logger.info("Result from remote is ", result.getStatus());
-                byte[] r = Base64.getDecoder().decode(result.getBody());
+
+                String responseBody = result.getBody();
+                if (responseBody.isEmpty()) {
+                    emptyCount ++ ;
+                    logger.info("Result is empty {}", emptyCount);
+                    try {
+                        Thread.sleep(emptyCount * 500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    continue;
+                } else {
+                    emptyCount = 0;
+                }
+                byte[] r = Base64.getDecoder().decode(responseBody);
                 outputStream.write(r);
             } catch (UnirestException e) {
                 e.printStackTrace();

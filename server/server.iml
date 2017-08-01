@@ -13,5 +13,6 @@
     <orderEntry type="library" name="unirest" level="project" />
     <orderEntry type="library" name="json-20170516" level="project" />
     <orderEntry type="module" module-name="common" />
+    <orderEntry type="library" name="logback" level="project" />
   </component>
 </module>

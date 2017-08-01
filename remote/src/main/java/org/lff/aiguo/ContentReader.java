@@ -24,7 +24,7 @@ public class ContentReader implements Runnable {
 
     @Override
     public void run() {
-        byte[] buffer = new byte[32 * 1024];
+        byte[] buffer = new byte[1024 * 1024];
         int len = 0;
         while (len >= -1) {
             try {

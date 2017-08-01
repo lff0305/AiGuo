@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -123,9 +124,10 @@ public class SocksRunner implements Runnable {
         logger.info("connected = {}", connected);
         byte[] buffer = new byte[1024 * 32];
         pool.submit(() -> {
-
-            ContentFetcher fetcher = new ContentFetcher(uid, outputStream);
+            AtomicBoolean exited = new AtomicBoolean(false);
+            ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
             try {
+
                 int len = 0;
                 while (len != -1) {
                     len = inputStream.read(buffer);
@@ -136,8 +138,10 @@ public class SocksRunner implements Runnable {
                         new Thread(fetcher).start();
                     }
                 }
+                logger.info("InputStream exited.");
+                exited.set(true);
             } catch (IOException e) {
-
+                e.printStackTrace();
             }
         });
     }
