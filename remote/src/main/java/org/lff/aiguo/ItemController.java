@@ -69,10 +69,13 @@ public class ItemController {
         }
 
         Socket worker = new Socket();
+        worker.setSoTimeout(10000);
+        worker.setKeepAlive(false);
         worker.connect(new InetSocketAddress(address, port));
 
         try {
             if (buffer != null) {
+                logger.info("Writting {}" , new String(buffer));
                 worker.getOutputStream().write(buffer, 0, buffer.length);
             }
         } catch (IOException e) {
@@ -81,35 +84,36 @@ public class ItemController {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        pool.submit(() -> {
-            InputStream s = null;
+        InputStream s = null;
+        try {
+            s = worker.getInputStream();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        int len = 0;
+        byte[] received = new byte[1024 * 32];
+        while (len != -1) {
             try {
-                s = worker.getInputStream();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            int len = 0;
-            byte[] received = new byte[1024 * 32];
-            while (len != -1) {
-                try {
-                    len = s.read(received);
-                    if (len > 0) {
-                        outputStream.write(received, 0, len);
-                    }
-                    outputStream.flush();
-                } catch (IOException e) {
-                    break;
+                len = s.read(received);
+                if (len > 0) {
+                    logger.info("Real server response with {} bytes of data", len);
+                    outputStream.write(received, 0, len);
                 }
+                outputStream.flush();
+            } catch (IOException e) {
+                break;
             }
-            logger.info("Worker finished.");
-        });
+        }
+        logger.info("Worker finished.");
+        logger.info("Result = {}", new String(outputStream.toByteArray()));
 
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return new String(outputStream.toByteArray());
+
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
     }
 
     @RequestMapping(path = "/g", method = RequestMethod.POST)

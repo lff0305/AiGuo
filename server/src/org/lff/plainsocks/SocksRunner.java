@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,11 +46,11 @@ public class SocksRunner implements Runnable {
             b = inputStream.read();
             if (b == 0x5) {
                 int nmethods = inputStream.read();
-                int methods = inputStream.read();
-                logger.info("Read a 0x5 {} {}", nmethods, methods);
-                if (nmethods == 0x2) {
-                    inputStream.read();
+                byte[] methods = new byte[nmethods];
+                for (int i=0; i<nmethods; i++) {
+                    methods[i] = inputStream.readByte();
                 }
+                logger.info("Read a 0x5 {} {}", nmethods, Arrays.toString(methods));
                 outputStream.write(NO_AUTH);
                 outputStream.flush();
 
@@ -61,7 +62,7 @@ public class SocksRunner implements Runnable {
 
     }
 
-    private void connect(DataInputStream inputStream, OutputStream outputStream) throws IOException {
+    private void connect(final DataInputStream inputStream, final OutputStream outputStream) throws IOException {
         int ver = inputStream.read();
         int cmd = inputStream.read();
         int rsv = inputStream.read();
@@ -116,26 +117,30 @@ public class SocksRunner implements Runnable {
         outputStream.flush();
         logger.info("Response OK to client");
 
-        pool.submit(()-> {
 
-            int len = 0;
-            byte[] buffer = new byte[1024 * 32];
-            try {
-                while (len != -1) {
-                    len = inputStream.read(buffer);
-                    if (len > 0) {
-                        byte[] source = new byte[len];
-                        System.arraycopy(buffer, 0, source, 0, len);
+        int len = 0;
+        byte[] buffer = new byte[1024 * 32];
+        try {
+            while (len != -1) {
+                len = inputStream.read(buffer);
+                if (len > 0) {
+                    byte[] source = new byte[len];
+                    System.arraycopy(buffer, 0, source, 0, len);
+                    pool.submit(() -> {
                         byte[] result = post(out.toByteArray(), atyp, port, source);
-                        outputStream.write(result);
-                        outputStream.flush();
-                    }
-                }
-            } catch (IOException e) {
+                        try {
+                            outputStream.write(result);
+                            outputStream.flush();
+                        } catch (IOException e) {
 
+                        }
+                    });
+                }
             }
-            logger.info("InputStream reader stopped.");
-        });
+        } catch (IOException e) {
+
+        }
+        logger.info("InputStream reader stopped.");
 
     }
 
@@ -151,10 +156,11 @@ public class SocksRunner implements Runnable {
         SimpleAESCipher cipher = new SimpleAESCipher();
 
         try {
-            logger.info("To send request to remote");
-            HttpResponse<String> result = Unirest.post("http://localhost:8080/h/c")
+            logger.info("To send request to remote {}", body);
+            HttpResponse<String> result = Unirest.post("http://localhost:80/h/c")
                     .body(cipher.encode(body))
                     .asString();
+            logger.info("Result from remote is ", result.getStatus());
             return Base64.getDecoder().decode(result.getBody());
         } catch (UnirestException e) {
             e.printStackTrace();
@@ -162,23 +168,4 @@ public class SocksRunner implements Runnable {
         return new byte[]{};
     }
 
-    private void post(byte[] dst, int atyp, int port) {
-
-        JSONObject o = new JSONObject();
-        o.put("dist", Base64.getEncoder().encodeToString(dst));
-        o.put("atyp", atyp);
-        o.put("port", port);
-
-        String body = o.toString();
-
-        SimpleAESCipher cipher = new SimpleAESCipher();
-
-        try {
-            Unirest.post("http://localhost:8080/h/c")
-                    .body(cipher.encode(body))
-                    .asString();
-        } catch (UnirestException e) {
-            e.printStackTrace();
-        }
-    }
 }
