@@ -26,7 +26,7 @@ public class Server {
         int port = 12345;
 
         ServerSocket server = new ServerSocket(port);
-        logger.info("Listened on port {} port");
+        logger.info("Listened on port {}", port);
         while (true) {
             Socket s = server.accept();
             pool.submit(() -> {
