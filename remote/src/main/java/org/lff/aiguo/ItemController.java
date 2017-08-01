@@ -63,6 +63,9 @@ public class ItemController {
             return Base64.getEncoder().encodeToString("ERR".getBytes());
         }
 
+
+        logger.info("OK returned");
+
         return Base64.getEncoder().encodeToString("OK".getBytes());
     }
 
@@ -112,7 +115,7 @@ public class ItemController {
     @RequestMapping(path = "/p", method = RequestMethod.POST)
     public @ResponseBody
     String close(@RequestBody String body) {
-        logger.info("Getting a request.");
+        logger.info("Getting a request for fetch.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a request json {}", o.toString());
@@ -134,6 +137,8 @@ public class ItemController {
                 break;
             }
         }
+
+        logger.info("Fetch Result = " + new String(out.toByteArray()));
 
         return Base64.getEncoder().encodeToString(out.toByteArray());
     }

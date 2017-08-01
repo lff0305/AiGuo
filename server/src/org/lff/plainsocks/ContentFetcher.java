@@ -31,6 +31,9 @@ public class ContentFetcher implements Runnable{
 
     @Override
     public void run() {
+
+        logger.info("Fetcher started.");
+
         while (true) {
             try {
 
