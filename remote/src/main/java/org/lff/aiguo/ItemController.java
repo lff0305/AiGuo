@@ -10,14 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Base64;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,6 +28,9 @@ import java.util.concurrent.Executors;
 @RequestMapping("/h")
 public class ItemController {
 
+    static ConcurrentHashMap<String, Socket> socketsMap = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, PipedInputStream> bufferMap = new ConcurrentHashMap<>();
+
     private Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static ExecutorService pool = Executors.newFixedThreadPool(256);
@@ -37,8 +39,36 @@ public class ItemController {
 
     @RequestMapping(path = "/c", method = RequestMethod.POST)
     public @ResponseBody
-    String connect(@RequestBody String body) throws IOException {
+    String doit(@RequestBody String body) throws IOException {
 
+        logger.info("Getting a request.");
+        String json = cipher.decode(body);
+        JSONObject o = new JSONObject(json);
+        logger.info("Getting a request json {}", o.toString());
+        byte[] buffer = new byte[]{};
+        String strBuffer = o.optString("buffer");
+        if (strBuffer != null) {
+            buffer = Base64.getDecoder().decode(strBuffer);
+        }
+        String uid = o.getString("uid");
+
+        Socket worker = socketsMap.get(uid);
+
+        try {
+            if (buffer != null) {
+                logger.info("Writting {}" , new String(buffer));
+                worker.getOutputStream().write(buffer, 0, buffer.length);
+            }
+        } catch (IOException e) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
+
+        return Base64.getEncoder().encodeToString("OK".getBytes());
+    }
+
+    @RequestMapping(path = "/g", method = RequestMethod.POST)
+    public @ResponseBody
+    String connect(@RequestBody String body) throws IOException {
         logger.info("Getting a request.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
@@ -47,10 +77,7 @@ public class ItemController {
         int atyp = o.getInt("atyp");
         int port = o.getInt("port");
         byte[] buffer = new byte[]{};
-        String strBuffer = o.optString("buffer");
-        if (strBuffer != null) {
-            buffer = Base64.getDecoder().decode(strBuffer);
-        }
+        String uid = o.optString("uid");
         InetAddress address = null;
 
         switch (atyp) {
@@ -69,62 +96,45 @@ public class ItemController {
         }
 
         Socket worker = new Socket();
-        worker.setSoTimeout(10000);
         worker.setKeepAlive(false);
         worker.connect(new InetSocketAddress(address, port));
 
-        try {
-            if (buffer != null) {
-                logger.info("Writting {}" , new String(buffer));
-                worker.getOutputStream().write(buffer, 0, buffer.length);
-            }
-        } catch (IOException e) {
+        socketsMap.put(uid, worker);
+        PipedOutputStream out = new PipedOutputStream();
+        bufferMap.put(uid, new PipedInputStream(out));
 
-        }
+        ContentReader reader = new ContentReader(worker.getInputStream(), out);
+        new Thread(reader).start();
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        return Base64.getEncoder().encodeToString("OK".getBytes());
+    }
 
-        InputStream s = null;
-        try {
-            s = worker.getInputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @RequestMapping(path = "/p", method = RequestMethod.POST)
+    public @ResponseBody
+    String close(@RequestBody String body) {
+        logger.info("Getting a request.");
+        String json = cipher.decode(body);
+        JSONObject o = new JSONObject(json);
+        logger.info("Getting a request json {}", o.toString());
+        String uid = o.optString("uid");
+        PipedInputStream pis = bufferMap.get(uid);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[32 * 1024];
         int len = 0;
-        byte[] received = new byte[1024 * 32];
-        while (len != -1) {
+        while (len > -1) {
             try {
-                len = s.read(received);
-                if (len > 0) {
-                    logger.info("Real server response with {} bytes of data", len);
-                    outputStream.write(received, 0, len);
-                }
-                outputStream.flush();
+                len = pis.read(buffer);
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (len > 0) {
+                out.write(buffer, 0, len);
+            } else {
                 break;
             }
         }
-        logger.info("Worker finished.");
-        logger.info("Result = {}", new String(outputStream.toByteArray()));
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
-    }
-
-    @RequestMapping(path = "/g", method = RequestMethod.POST)
-    public @ResponseBody
-    String get(@RequestBody String body) {
-        return "";
-    }
-
-    @RequestMapping(path = "/cl", method = RequestMethod.POST)
-    public @ResponseBody
-    String close(@RequestBody String body) {
-        return "";
+        return Base64.getEncoder().encodeToString(out.toByteArray());
     }
 }

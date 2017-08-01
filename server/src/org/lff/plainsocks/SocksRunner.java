@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -63,6 +64,7 @@ public class SocksRunner implements Runnable {
     }
 
     private void connect(final DataInputStream inputStream, final OutputStream outputStream) throws IOException {
+        String uid = UUID.randomUUID().toString();
         int ver = inputStream.read();
         int cmd = inputStream.read();
         int rsv = inputStream.read();
@@ -117,38 +119,59 @@ public class SocksRunner implements Runnable {
         outputStream.flush();
         logger.info("Response OK to client");
 
-
-        int len = 0;
+        String connected = connect(uid, out.toByteArray(), atyp, port);
+        logger.info("connected = {}", connected);
         byte[] buffer = new byte[1024 * 32];
-        try {
-            while (len != -1) {
-                len = inputStream.read(buffer);
-                if (len > 0) {
-                    byte[] source = new byte[len];
-                    System.arraycopy(buffer, 0, source, 0, len);
-                    pool.submit(() -> {
-                        byte[] result = post(out.toByteArray(), atyp, port, source);
-                        try {
-                            outputStream.write(result);
-                            outputStream.flush();
-                        } catch (IOException e) {
+        pool.submit(() -> {
 
-                        }
-                    });
+            ContentFetcher fetcher = new ContentFetcher(uid, outputStream);
+            try {
+                int len = 0;
+                while (len != -1) {
+                    len = inputStream.read(buffer);
+                    if (len > 0) {
+                        byte[] source = new byte[len];
+                        System.arraycopy(buffer, 0, source, 0, len);
+                        byte[] result = post(uid, out.toByteArray(), atyp, port, source);
+                        new Thread(fetcher).start();
+                    }
                 }
+            } catch (IOException e) {
+
             }
-        } catch (IOException e) {
-
-        }
-        logger.info("InputStream reader stopped.");
-
+        });
     }
 
-    private byte[] post(byte[] dst, int atyp, int port, byte[] buffer) {
+    private String connect(String uid, byte[] dst, int atyp, int port) {
         JSONObject o = new JSONObject();
         o.put("dist", Base64.getEncoder().encodeToString(dst));
         o.put("atyp", atyp);
         o.put("port", port);
+        o.put("uid", uid);
+
+        String body = o.toString();
+
+        SimpleAESCipher cipher = new SimpleAESCipher();
+
+        try {
+            logger.info("To send request to remote {}", body);
+            HttpResponse<String> result = Unirest.post("http://localhost:80/h/g")
+                    .body(cipher.encode(body))
+                    .asString();
+            logger.info("Result from remote is ", result.getStatus());
+            return new String(Base64.getDecoder().decode(result.getBody()));
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private byte[] post(String uid, byte[] dst, int atyp, int port, byte[] buffer) {
+        JSONObject o = new JSONObject();
+        o.put("dist", Base64.getEncoder().encodeToString(dst));
+        o.put("atyp", atyp);
+        o.put("port", port);
+        o.put("uid", uid);
         o.put("buffer", Base64.getEncoder().encodeToString(buffer));
 
         String body = o.toString();
