@@ -79,7 +79,6 @@ public class ItemController {
         byte[] dst = Base64.getDecoder().decode(o.getString("dist"));
         int atyp = o.getInt("atyp");
         int port = o.getInt("port");
-        byte[] buffer = new byte[]{};
         String uid = o.optString("uid");
         InetAddress address = null;
 
@@ -92,7 +91,7 @@ public class ItemController {
                 address = InetAddress.getByName(h);
                 break;
             case 0x04: //IP V6
-                byte[] inet6 = new byte[6];
+                address = InetAddress.getByAddress(dst);
                 break;
             default: {
             }
@@ -127,7 +126,7 @@ public class ItemController {
         try {
             int length = pis.available();
 
-            logger.info("Availbytes {}", length);
+            logger.info("Available bytes {}", length);
 
             while (length > 0) {
                 int len = 0;

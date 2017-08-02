@@ -95,10 +95,10 @@ public class SocksRunner implements Runnable {
                 // dst = InetAddress.getByName(h);
                 out.write(host);
                 break;
-            case 0x04: //IP V6
-                byte[] inet6 = new byte[6];
+            case 0x04: //IP V6, 16 bytes
+                byte[] inet6 = new byte[16];
                 len = inputStream.read(inet6);
-                if (len < 6) {
+                if (len < 16) {
                     throw new IOException("Invalid ipv6 address");
                 }
               //  dst = InetAddress.getByAddress(inet6);
