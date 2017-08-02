@@ -12,6 +12,9 @@ import java.util.zip.ZipOutputStream;
  */
 public class TestZip {
     public static void main(String[] argu) throws IOException {
+
+        System.out.println(Base64.getEncoder().encodeToString(new byte[0]));
+
         String s = "213421342AAAAAAAAAAAAAAAAA142134R0VUIC8gSFRUUC8xLjENCkhvc3Q6IGxvY2FsaG9zdDo4MDgwDQpVc2VyLUFnZW50OiBjdXJsLzcuNTQuMQ0KQWNjZXB0OiAqLyoNCg0K";
         byte[] b = Base64.getDecoder().decode(s);
         ByteArrayOutputStream bs = new ByteArrayOutputStream();

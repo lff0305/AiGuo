@@ -137,12 +137,15 @@ public class ItemController {
         logger.info("Getting a connect request json {}", o.toString());
         String uid = o.optString("uid");
         PipedInputStream pis = bufferMap.get(uid);
+        if (pis == null) {
+            return "";
+        }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[128 * 1024];
+
         try {
             int length = pis.available();
-
+            byte[] buffer = new byte[length];
             logger.info("Available bytes {}", length);
 
             while (length > 0) {
@@ -151,7 +154,7 @@ public class ItemController {
                     len = pis.read(buffer);
                     length -= len;
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    break;
                 }
                 if (len > 0) {
                     out.write(buffer, 0, len);
@@ -161,7 +164,7 @@ public class ItemController {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+
         }
 
 
