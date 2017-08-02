@@ -44,7 +44,7 @@ public class ItemController {
         logger.info("Getting a request for work");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a request json {}", o.toString());
+        logger.info("Getting a work request json {}", o.toString());
         byte[] buffer = new byte[]{};
         String strBuffer = o.optString("buffer");
         if (strBuffer != null) {
@@ -56,7 +56,7 @@ public class ItemController {
 
         try {
             if (buffer != null) {
-                logger.info("Writting {}" , new String(buffer));
+                logger.info("Writting {} bytes" , buffer.length);
                 worker.getOutputStream().write(buffer, 0, buffer.length);
             }
         } catch (IOException e) {
@@ -75,7 +75,7 @@ public class ItemController {
         logger.info("Getting a request for connect");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a request json {}", o.toString());
+        logger.info("Getting a connect request json {}", o.toString());
         byte[] dst = Base64.getDecoder().decode(o.getString("dist"));
         int atyp = o.getInt("atyp");
         int port = o.getInt("port");
@@ -102,10 +102,15 @@ public class ItemController {
         }
 
         Socket worker = new Socket();
+        InetSocketAddress remote = new InetSocketAddress(address, port);
         try {
+            logger.info("TO start to connect to {}", remote );
             worker.setKeepAlive(false);
-            worker.connect(new InetSocketAddress(address, port));
+            worker.setSoTimeout(5000);
+            worker.connect(remote);
+            logger.info("TO start to connect to {} successfully.", remote );
         } catch (Exception e) {
+            logger.info("Failed to connect to {} successfully.", remote );
             return Base64.getEncoder().encodeToString("Failed to connect".getBytes());
         }
 
@@ -113,7 +118,7 @@ public class ItemController {
         PipedOutputStream out = new PipedOutputStream();
         try {
             bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
-            ContentReader reader = new ContentReader(worker.getInputStream(), out);
+            ContentReader reader = new ContentReader(uid, worker.getInputStream(), out);
             pool.submit(reader);
         } catch (Exception e) {
             logger.error("Failed to start reader", e);
@@ -129,12 +134,12 @@ public class ItemController {
         logger.info("Getting a request for fetch.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a request json {}", o.toString());
+        logger.info("Getting a connect request json {}", o.toString());
         String uid = o.optString("uid");
         PipedInputStream pis = bufferMap.get(uid);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[32 * 1024];
+        byte[] buffer = new byte[128 * 1024];
         try {
             int length = pis.available();
 
@@ -172,17 +177,20 @@ public class ItemController {
         logger.info("Getting a request for disconnect.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a request json {}", o.toString());
+        logger.info("Getting a disconnect request json {}", o.toString());
         String uid = o.optString("uid");
         PipedInputStream pis = bufferMap.remove(uid);
         try {
-            pis.close();
+            if (pis != null) {
+                pis.close();
+            }
         } catch (IOException e) {
         }
         Socket worker = socketsMap.remove(uid);
         try {
             if (worker != null) {
                 worker.close();
+                logger.info("Worker closed for {}", uid);
             }
         } catch (IOException e) {
         }

@@ -138,31 +138,31 @@ public class SocksRunner implements Runnable {
         }
 
         outputStream.flush();
-        logger.info("Response OK to client");
-
+        logger.info("Response {} to client", connected);
+        if (!connected.equals("OK")) {
+            return;
+        }
         byte[] buffer = new byte[1024 * 32];
-        pool.submit(() -> {
-            AtomicBoolean exited = new AtomicBoolean(false);
-            ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
-            try {
+        AtomicBoolean exited = new AtomicBoolean(false);
+        ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
+        try {
 
-                int len = 0;
-                while (len != -1) {
-                    len = inputStream.read(buffer);
-                    if (len > 0) {
-                        byte[] source = new byte[len];
-                        System.arraycopy(buffer, 0, source, 0, len);
-                        byte[] result = post(uid, out.toByteArray(), atyp, port, source);
-                        new Thread(fetcher).start();
-                    }
+            int len = 0;
+            while (len != -1) {
+                len = inputStream.read(buffer);
+                if (len > 0) {
+                    byte[] source = new byte[len];
+                    System.arraycopy(buffer, 0, source, 0, len);
+                    byte[] result = post(uid, out.toByteArray(), atyp, port, source);
+                    new Thread(fetcher).start();
                 }
-                logger.info("InputStream exited.");
-                exited.set(true);
-                disconnect(uid);
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        });
+            logger.info("InputStream exited.");
+            exited.set(true);
+            disconnect(uid);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void disconnect(String uid) {
@@ -174,7 +174,7 @@ public class SocksRunner implements Runnable {
         SimpleAESCipher cipher = new SimpleAESCipher();
 
         logger.info("To send disconnect request to remote {}", body);
-        Unirest.post("http://localhost:80/h/d").asStringAsync();
+        Unirest.post("http://localhost:80/h/d").body(cipher.encode(body)).asStringAsync();
     }
 
     private String connect(String uid, byte[] dst, int atyp, int port) {

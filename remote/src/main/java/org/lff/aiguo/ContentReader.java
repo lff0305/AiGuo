@@ -16,8 +16,10 @@ public class ContentReader implements Runnable {
 
     private final InputStream inputStream;
     private final PipedOutputStream outputStream;
+    private final String uid;
 
-    public ContentReader(InputStream inputStream, PipedOutputStream outputStream) {
+    public ContentReader(String uid, InputStream inputStream, PipedOutputStream outputStream) {
+        this.uid = uid;
         this.inputStream = inputStream;
         this.outputStream = outputStream;
     }
@@ -34,9 +36,8 @@ public class ContentReader implements Runnable {
                     outputStream.write(buffer, 0, len);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
-                return;
             }
         }
+        logger.info("Reader for {} exited.", uid);
     }
 }
