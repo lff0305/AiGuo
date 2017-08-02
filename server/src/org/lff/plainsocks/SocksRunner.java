@@ -140,10 +140,23 @@ public class SocksRunner implements Runnable {
                 }
                 logger.info("InputStream exited.");
                 exited.set(true);
+                disconnect(uid);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    private void disconnect(String uid) {
+        JSONObject o = new JSONObject();
+        o.put("uid", uid);
+
+        String body = o.toString();
+
+        SimpleAESCipher cipher = new SimpleAESCipher();
+
+        logger.info("To send disconnect request to remote {}", body);
+        Unirest.post("http://localhost:80/h/d").asStringAsync();
     }
 
     private String connect(String uid, byte[] dst, int atyp, int port) {

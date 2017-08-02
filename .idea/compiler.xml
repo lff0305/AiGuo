@@ -11,8 +11,5 @@
         <module name="remote" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="aiguo" target="1.8" />
-    </bytecodeTargetLevel>
   </component>
 </project>

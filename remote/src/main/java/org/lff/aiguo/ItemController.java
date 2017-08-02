@@ -107,14 +107,14 @@ public class ItemController {
         bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
 
         ContentReader reader = new ContentReader(worker.getInputStream(), out);
-        new Thread(reader).start();
+        pool.submit(reader);
 
         return Base64.getEncoder().encodeToString("OK".getBytes());
     }
 
     @RequestMapping(path = "/p", method = RequestMethod.POST)
     public @ResponseBody
-    String close(@RequestBody String body) {
+    String fetch(@RequestBody String body) {
         logger.info("Getting a request for fetch.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
@@ -153,5 +153,29 @@ public class ItemController {
         logger.info("Fetch Result = " + bytes.length);
 
         return Base64.getEncoder().encodeToString(bytes);
+    }
+
+    @RequestMapping(path = "/d", method = RequestMethod.POST)
+    public @ResponseBody
+    String close(@RequestBody String body) {
+        logger.info("Getting a request for disconnect.");
+        String json = cipher.decode(body);
+        JSONObject o = new JSONObject(json);
+        logger.info("Getting a request json {}", o.toString());
+        String uid = o.optString("uid");
+        PipedInputStream pis = bufferMap.remove(uid);
+        try {
+            pis.close();
+        } catch (IOException e) {
+        }
+        Socket worker = socketsMap.remove(uid);
+        try {
+            if (worker != null) {
+                worker.close();
+            }
+        } catch (IOException e) {
+        }
+
+        return Base64.getEncoder().encodeToString("OK".getBytes());
     }
 }
