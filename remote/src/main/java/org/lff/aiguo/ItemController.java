@@ -71,7 +71,7 @@ public class ItemController {
 
     @RequestMapping(path = "/g", method = RequestMethod.POST)
     public @ResponseBody
-    String connect(@RequestBody String body) throws IOException {
+    String connect(@RequestBody String body) {
         logger.info("Getting a request for connect");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
@@ -82,31 +82,43 @@ public class ItemController {
         String uid = o.optString("uid");
         InetAddress address = null;
 
-        switch (atyp) {
-            case 0x01: //IP V4
-                address = InetAddress.getByAddress(dst);
-                break;
-            case 0x03: //domain
-                String h = new String(dst);
-                address = InetAddress.getByName(h);
-                break;
-            case 0x04: //IP V6
-                address = InetAddress.getByAddress(dst);
-                break;
-            default: {
+        try {
+            switch (atyp) {
+                case 0x01: //IP V4
+                    address = InetAddress.getByAddress(dst);
+                    break;
+                case 0x03: //domain
+                    String h = new String(dst);
+                    address = InetAddress.getByName(h);
+                    break;
+                case 0x04: //IP V6
+                    address = InetAddress.getByAddress(dst);
+                    break;
+                default: {
+                }
             }
+        } catch (Exception e) {
+            return Base64.getEncoder().encodeToString("Invalid Address".getBytes());
         }
 
         Socket worker = new Socket();
-        worker.setKeepAlive(false);
-        worker.connect(new InetSocketAddress(address, port));
+        try {
+            worker.setKeepAlive(false);
+            worker.connect(new InetSocketAddress(address, port));
+        } catch (Exception e) {
+            return Base64.getEncoder().encodeToString("Failed to connect".getBytes());
+        }
 
         socketsMap.put(uid, worker);
         PipedOutputStream out = new PipedOutputStream();
-        bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
-
-        ContentReader reader = new ContentReader(worker.getInputStream(), out);
-        pool.submit(reader);
+        try {
+            bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
+            ContentReader reader = new ContentReader(worker.getInputStream(), out);
+            pool.submit(reader);
+        } catch (Exception e) {
+            logger.error("Failed to start reader", e);
+            return Base64.getEncoder().encodeToString("Failed to start reader".getBytes());
+        }
 
         return Base64.getEncoder().encodeToString("OK".getBytes());
     }

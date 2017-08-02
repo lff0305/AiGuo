@@ -116,12 +116,30 @@ public class SocksRunner implements Runnable {
       //  post(out.toByteArray(), atyp, port);
         logger.info("Request posted.");
 
-        outputStream.write(new byte[]{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        String connected = connect(uid, out.toByteArray(), atyp, port);
+        logger.info("connected = {}", connected);
+        switch (connected) {
+            case "OK" : {
+                outputStream.write(new byte[]{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                break;
+            }
+            case "Invalid Address" : {
+                outputStream.write(new byte[]{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                break;
+            }
+            case "Failed to connect": {
+                outputStream.write(new byte[]{0x05, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                break;
+            }
+            case "Failed to start reader": {
+                outputStream.write(new byte[]{0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                break;
+            }
+        }
+
         outputStream.flush();
         logger.info("Response OK to client");
 
-        String connected = connect(uid, out.toByteArray(), atyp, port);
-        logger.info("connected = {}", connected);
         byte[] buffer = new byte[1024 * 32];
         pool.submit(() -> {
             AtomicBoolean exited = new AtomicBoolean(false);
