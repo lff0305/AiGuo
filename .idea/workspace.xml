@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="004095d0-d428-402c-83a2-92823b65c238" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/server/src/org/lff/plainsocks/ContentFetcher.java" afterPath="$PROJECT_DIR$/server/src/org/lff/plainsocks/ContentFetcher.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/server/src/org/lff/plainsocks/SimpleHttpClient.java" afterPath="$PROJECT_DIR$/server/src/org/lff/plainsocks/SimpleHttpClient.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/server/src/org/lff/plainsocks/URLEncode.java" afterPath="$PROJECT_DIR$/server/src/org/lff/plainsocks/URLEncode.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/server/src/org/lff/plainsocks/UnirestTest.java" afterPath="$PROJECT_DIR$/server/src/org/lff/plainsocks/UnirestTest.java" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/remote/target/" />
@@ -612,7 +607,7 @@
       <updated>1501207878099</updated>
       <workItem from="1501207879575" duration="7590000" />
       <workItem from="1501489232435" duration="33029000" />
-      <workItem from="1501731842828" duration="7126000" />
+      <workItem from="1501731842828" duration="7132000" />
     </task>
     <task id="LOCAL-00001" summary="No issue. Update code">
       <created>1501236112129</created>
@@ -719,11 +714,18 @@
       <option name="project" value="LOCAL" />
       <updated>1501733470551</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="No issue. Update code.">
+      <created>1501743482780</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1501743482780</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="47745000" />
+    <option name="totallyTimeSpent" value="47751000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="2578" height="1408" extended-state="6" />
