@@ -2,6 +2,7 @@
 out
 *.class
 
+*.bak
 remote/.mvn/
 remote/src/test/
 
