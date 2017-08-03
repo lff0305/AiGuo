@@ -1,6 +1,10 @@
-# Compiled class file
+ Compiled class file
 out
 *.class
+
+remote/target
+
+.idea
 
 *.bak
 remote/.mvn/

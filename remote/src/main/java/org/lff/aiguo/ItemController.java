@@ -55,6 +55,10 @@ public class ItemController {
 
         Socket worker = socketsMap.get(uid);
 
+        if (worker == null) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
+
         try {
             if (buffer != null) {
                 logger.info("Writting {} bytes" , buffer.length);
@@ -105,14 +109,14 @@ public class ItemController {
         Socket worker = new Socket();
         InetSocketAddress remote = new InetSocketAddress(address, port);
         try {
-            logger.info("TO start to connect to {}", remote );
+            logger.info("TO start to connect to {} {}", uid, remote );
             worker.setKeepAlive(false);
-            worker.setSoTimeout(5000);
-            worker.setReceiveBufferSize(1024 * 1024);
+            worker.setSoTimeout(15000);
+            worker.setReceiveBufferSize(128 * 1024);
             worker.connect(remote);
-            logger.info("TO start to connect to {} successfully.", remote );
+            logger.info("Connect to {} {} successfully.", uid, remote );
         } catch (Exception e) {
-            logger.info("Failed to connect to {} successfully.", remote );
+            logger.info("Failed to connect to {} {} ", uid, remote, e);
             return Base64.getEncoder().encodeToString("Failed to connect".getBytes());
         }
 
@@ -175,7 +179,9 @@ public class ItemController {
         logger.info("Getting a disconnect request json {}", o.toString());
         String uid = o.optString("uid");
         ConcurrentLinkedQueue queue = bufferMap.remove(uid);
-        queue.clear();
+        if (queue != null) {
+            queue.clear();
+        }
         Socket worker = socketsMap.remove(uid);
         try {
             if (worker != null) {
