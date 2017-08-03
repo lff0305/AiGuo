@@ -1,21 +1,16 @@
-package com.s1.dbs.service.creditcard;
+package org.lff.plainsocks;
 
-import com.s1.arch.exception.S1Exception;
-import com.s1.bnk.util.Logger;
-import com.s1.dbs.service.creditcard.exceptions.AuthException;
-import com.s1.dbs.service.creditcard.exceptions.HTTPException;
-import org.grnds.facility.config.GrndsConfiguration;
-import org.grnds.facility.config.GrndsConfigurationEnvironment;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,15 +19,9 @@ import java.util.Map;
  */
 public class SimpleHttpClient {
 
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     static {
-        String key = "cardservice.disableSSL";
-        GrndsConfigurationEnvironment ep = GrndsConfiguration.getInstance().getEnvironment("ep");
-        String value = ep.getProperty(key);
-        Logger.info("Get cardservice.disableSSL = " + key);
-        if ("true".equalsIgnoreCase(value)) {
-            disableSSLCertificateChecking();
-            Logger.info("SSL Certificate checking disabled.");
-        }
     }
 
     /**
@@ -41,7 +30,7 @@ public class SimpleHttpClient {
      * @param body body
      * @return response body, if successful
      */
-    public static String post(String httpurl, Map<String, String> headers, String body) throws HTTPException {
+    public static String post(String httpurl, Map<String, String> headers, String body) throws IOException {
         HttpURLConnection conn = null;
 
         BufferedWriter bw = null;
@@ -53,7 +42,7 @@ public class SimpleHttpClient {
             conn.setDoInput(true);
             conn.setRequestMethod("POST");
             conn.setUseCaches(false);
-
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             //Set headers
             for (String key : headers.keySet()) {
                 String v = headers.get(key);
@@ -65,10 +54,9 @@ public class SimpleHttpClient {
             conn.connect();
 
             if (body != null) {
-                bw = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream()));
-                bw.write(body);
-                bw.flush();
-                bw.close();
+                OutputStream out = conn.getOutputStream();
+                out.write(body.getBytes("UTF-8"));
+                out.flush();
             }
 
             handleError(conn);
@@ -77,7 +65,7 @@ public class SimpleHttpClient {
             return response.toString();
 
         } catch (IOException e) {
-            throw new HTTPException("IOException", e);
+            throw e;
         } finally {
             if (bw != null) {
                 try {
@@ -97,10 +85,9 @@ public class SimpleHttpClient {
      * @param header headers
      * @return response body, if successful
      */
-    public static String get(String httpurl, Map<String, String> headers) throws HTTPException {
+    public static String get(String httpurl, Map<String, String> headers) throws IOException {
         HttpURLConnection conn = null;
         try {
-            Logger.info("Start to request " + httpurl + " headers : " + headers);
             URL url = new URL(httpurl);
             conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(false);
@@ -123,10 +110,9 @@ public class SimpleHttpClient {
             // Read response
             InputStream inputStream = conn.getInputStream();
             String result = readResponse(inputStream);
-            Logger.info("Response got " + result);
             return result;
         } catch (IOException e) {
-            throw new HTTPException("IOException", e);
+            throw e;
         } finally {
             if (conn != null) {
                 conn.disconnect();
@@ -134,7 +120,7 @@ public class SimpleHttpClient {
         }
     }
 
-    private static void handleError(HttpURLConnection conn) throws IOException, HTTPException {
+    private static void handleError(HttpURLConnection conn) throws IOException {
         // Request not successful
         if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
             String error = null;
@@ -143,7 +129,7 @@ public class SimpleHttpClient {
             } catch (IOException e) {
                 error = "Failed to read error stream " + e.getMessage();
             }
-            throw new HTTPException("Request Failed. HTTP Error Code: " + conn.getResponseCode() + " error response = " + error);
+            throw new IOException("Request Failed. HTTP Error Code: " + conn.getResponseCode() + " error response = " + error);
         }
     }
 
@@ -151,12 +137,26 @@ public class SimpleHttpClient {
         // Read response
         BufferedReader br = null;
         StringBuffer response = new StringBuffer();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[64 * 1024];
         try {
-            br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-            String line;
-            while ((line = br.readLine()) != null) {
-                response.append(line);
+            logger.info("Start to read response");
+//            br = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"), 512 * 1024);
+//            String line;
+//            while ((line = br.readLine()) != null) {
+//                logger.info("Read a line {}", line.length());
+//                response.append(line);
+//            }
+            int len = 0;
+            while (len != -1) {
+                len = inputStream.read(buffer);
+                // logger.info("Read a line {}", len);
+                if (len == -1) {
+                    break;
+                }
+                bos.write(buffer, 0, len);
             }
+            return new String(bos.toByteArray(), "UTF-8");
         } finally {
             if (br != null) {
                 try {
@@ -166,8 +166,6 @@ public class SimpleHttpClient {
                 }
             }
         }
-
-        return response.toString();
     }
 
     /**
@@ -207,7 +205,6 @@ public class SimpleHttpClient {
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (Exception e) {
-            Logger.error("Failed to disable ssl certificate checking", e);
         }
     }
 }

@@ -2,6 +2,9 @@
 out
 *.class
 
+remote/.mvn/
+remote/src/test/
+
 # Log file
 *.log
 

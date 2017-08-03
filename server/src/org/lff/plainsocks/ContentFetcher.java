@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -38,7 +39,8 @@ public class ContentFetcher implements Runnable{
         logger.info("Fetcher started.");
 
         int emptyCount = 0;
-        while (!stopped.get() && emptyCount < 3) {
+        int errorCount = 0;
+        while (!stopped.get() && emptyCount < 3 && errorCount < 2) {
             try {
 
                 JSONObject o = new JSONObject();
@@ -49,11 +51,12 @@ public class ContentFetcher implements Runnable{
                 SimpleAESCipher cipher = new SimpleAESCipher();
 
                 logger.info("Start to post fetch request");
-                HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
-                        .body(cipher.encode(body))
-                        .asString();
+//                HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
+//                        .body(cipher.encode(body))
+//                        .asString();
+                String result = SimpleHttpClient.post("http://localhost:80/h/p", new HashMap<>(), cipher.encode(body));
                 logger.info("Finished fetch request");
-                String responseBody = result.getBody();
+                String responseBody = result; //.getBody();
                 if (responseBody.isEmpty()) {
                     emptyCount ++ ;
                     logger.info("Result is empty {}", emptyCount);
@@ -69,10 +72,8 @@ public class ContentFetcher implements Runnable{
                 logger.info("Received fetch len = {}", responseBody.length());
                 byte[] r = Base64.getDecoder().decode(responseBody);
                 outputStream.write(r);
-            } catch (UnirestException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                return;
             }
         }
     }
