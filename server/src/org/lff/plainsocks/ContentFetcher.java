@@ -48,10 +48,11 @@ public class ContentFetcher implements Runnable{
 
                 SimpleAESCipher cipher = new SimpleAESCipher();
 
+                logger.info("Start to post fetch request");
                 HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
                         .body(cipher.encode(body))
                         .asString();
-
+                logger.info("Finished fetch request");
                 String responseBody = result.getBody();
                 if (responseBody.isEmpty()) {
                     emptyCount ++ ;
@@ -65,6 +66,7 @@ public class ContentFetcher implements Runnable{
                 } else {
                     emptyCount = 0;
                 }
+                logger.info("Received fetch len = {}", responseBody.length());
                 byte[] r = Base64.getDecoder().decode(responseBody);
                 outputStream.write(r);
             } catch (UnirestException e) {

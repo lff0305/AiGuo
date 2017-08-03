@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author Feifei Liu
@@ -15,13 +17,13 @@ public class ContentReader implements Runnable {
     private Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private final InputStream inputStream;
-    private final PipedOutputStream outputStream;
+    private final ConcurrentLinkedQueue<byte[]> queue;
     private final String uid;
 
-    public ContentReader(String uid, InputStream inputStream, PipedOutputStream outputStream) {
+    public ContentReader(String uid, InputStream inputStream, ConcurrentLinkedQueue<byte[]> queue) {
         this.uid = uid;
         this.inputStream = inputStream;
-        this.outputStream = outputStream;
+        this.queue = queue;
     }
 
     @Override
@@ -33,9 +35,11 @@ public class ContentReader implements Runnable {
                 len = inputStream.read(buffer);
                 if (len > -1) {
                     logger.info("Write {} bytes to buffer", len);
-                    outputStream.write(buffer, 0, len);
+                    queue.add(Arrays.copyOf(buffer, len));
                 }
             } catch (IOException e) {
+                logger.info("Reader exited after {}", e.getMessage());
+                return;
             }
         }
         logger.info("Reader for {} exited.", uid);

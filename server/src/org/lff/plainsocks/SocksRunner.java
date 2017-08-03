@@ -3,7 +3,6 @@ package org.lff.plainsocks;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mashape.unirest.request.HttpRequestWithBody;
 import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
@@ -11,10 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
@@ -154,7 +150,7 @@ public class SocksRunner implements Runnable {
                     byte[] source = new byte[len];
                     System.arraycopy(buffer, 0, source, 0, len);
                     byte[] result = post(uid, out.toByteArray(), atyp, port, source);
-                    new Thread(fetcher).start();
+                    pool.submit(fetcher);
                 }
             }
             logger.info("InputStream exited.");

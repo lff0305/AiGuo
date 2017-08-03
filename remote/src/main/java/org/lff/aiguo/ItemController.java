@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,7 +30,7 @@ import java.util.concurrent.Executors;
 public class ItemController {
 
     static ConcurrentHashMap<String, Socket> socketsMap = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, PipedInputStream> bufferMap = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, ConcurrentLinkedQueue<byte[]>> bufferMap = new ConcurrentHashMap<>();
 
     private Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -107,6 +108,7 @@ public class ItemController {
             logger.info("TO start to connect to {}", remote );
             worker.setKeepAlive(false);
             worker.setSoTimeout(5000);
+            worker.setReceiveBufferSize(1024 * 1024);
             worker.connect(remote);
             logger.info("TO start to connect to {} successfully.", remote );
         } catch (Exception e) {
@@ -115,9 +117,9 @@ public class ItemController {
         }
 
         socketsMap.put(uid, worker);
-        PipedOutputStream out = new PipedOutputStream();
+        ConcurrentLinkedQueue out = new ConcurrentLinkedQueue();
         try {
-            bufferMap.put(uid, new PipedInputStream(out, 1024 * 1024));
+            bufferMap.put(uid, out);
             ContentReader reader = new ContentReader(uid, worker.getInputStream(), out);
             pool.submit(reader);
         } catch (Exception e) {
@@ -134,44 +136,34 @@ public class ItemController {
         logger.info("Getting a request for fetch.");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a connect request json {}", o.toString());
+        logger.info("Getting a fetch json {}", o.toString());
         String uid = o.optString("uid");
-        PipedInputStream pis = bufferMap.get(uid);
-        if (pis == null) {
+        ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
+        if (queue == null) {
             return "";
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        try {
-            int length = pis.available();
-            byte[] buffer = new byte[length];
-            logger.info("Available bytes {}", length);
+        byte[] buffer = queue.poll();
 
-            while (length > 0) {
-                int len = 0;
-                try {
-                    len = pis.read(buffer);
-                    length -= len;
-                } catch (IOException e) {
-                    break;
-                }
-                if (len > 0) {
-                    out.write(buffer, 0, len);
-                } else {
-                    break;
-                }
-            }
-
-        } catch (IOException e) {
-
+        if (buffer == null) {
+            logger.info("Nothing to fetch, exit.");
+            return "";
         }
+        logger.info("Available bytes {}", buffer.length);
+        while (buffer != null) {
+            out.write(buffer, 0, buffer.length);
+            buffer = queue.poll();
+        }
+
 
 
         byte[] bytes = out.toByteArray();
         logger.info("Fetch Result = " + bytes.length);
-
-        return Base64.getEncoder().encodeToString(bytes);
+        String encoded = Base64.getEncoder().encodeToString(bytes);
+        logger.info("Encoded length = {}", encoded.length());
+        return encoded;
     }
 
     @RequestMapping(path = "/d", method = RequestMethod.POST)
@@ -182,13 +174,8 @@ public class ItemController {
         JSONObject o = new JSONObject(json);
         logger.info("Getting a disconnect request json {}", o.toString());
         String uid = o.optString("uid");
-        PipedInputStream pis = bufferMap.remove(uid);
-        try {
-            if (pis != null) {
-                pis.close();
-            }
-        } catch (IOException e) {
-        }
+        ConcurrentLinkedQueue queue = bufferMap.remove(uid);
+        queue.clear();
         Socket worker = socketsMap.remove(uid);
         try {
             if (worker != null) {
