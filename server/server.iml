@@ -15,5 +15,8 @@
     <orderEntry type="library" name="unirest-java-1.4.9" level="project" />
     <orderEntry type="library" name="logback" level="project" />
     <orderEntry type="library" name="commons-http" level="project" />
+    <orderEntry type="library" name="unirest-java-1.4.9" level="project" />
+    <orderEntry type="library" name="logback" level="project" />
+    <orderEntry type="library" name="commons-http" level="project" />
   </component>
 </module>
