@@ -20,7 +20,6 @@ remote/src/test/
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 *.zip
