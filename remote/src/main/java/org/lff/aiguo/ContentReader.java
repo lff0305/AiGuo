@@ -2,10 +2,12 @@ package org.lff.aiguo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -24,6 +26,7 @@ public class ContentReader implements Runnable {
         this.uid = uid;
         this.inputStream = inputStream;
         this.queue = queue;
+        MDC.put("uid", String.valueOf(uid.hashCode()));
     }
 
     @Override

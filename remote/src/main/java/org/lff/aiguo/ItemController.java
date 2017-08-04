@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -52,7 +54,11 @@ public class ItemController {
             buffer = Base64.getDecoder().decode(strBuffer);
         }
         String uid = o.getString("uid");
+        if (uid == null) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
 
+        MDC.put("uid", String.valueOf(uid.hashCode()));
         Socket worker = socketsMap.get(uid);
 
         if (worker == null) {
@@ -86,7 +92,11 @@ public class ItemController {
         int port = o.getInt("port");
         String uid = o.optString("uid");
         InetAddress address = null;
+        if (uid == null) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
 
+        MDC.put("uid", String.valueOf(uid.hashCode()));
         try {
             switch (atyp) {
                 case 0x01: //IP V4
@@ -142,6 +152,13 @@ public class ItemController {
         JSONObject o = new JSONObject(json);
         logger.info("Getting a fetch json {}", o.toString());
         String uid = o.optString("uid");
+
+        if (uid == null) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
+
+        MDC.put("uid", String.valueOf(uid.hashCode()));
+
         ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
         if (queue == null) {
             return "";
