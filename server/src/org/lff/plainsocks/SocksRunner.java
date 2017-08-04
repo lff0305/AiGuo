@@ -11,6 +11,8 @@ import org.slf4j.MDC;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Base64;
@@ -39,6 +41,8 @@ public class SocksRunner implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final byte[] NO_AUTH = new byte[]{0x05, 0x00};
+    private static final byte[] INVALID_ADDR = (new byte[]{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    private static final byte[] FAILED_TO_CONNECT = (new byte[]{0x05, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
 
     public void run()  {
 
@@ -73,15 +77,18 @@ public class SocksRunner implements Runnable {
         logger.info("connect ver = {}, cmd = {}, rsv = {}, atyp = {}", ver, cmd, rsv, atyp);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
+        InetAddress address = null;
         switch (atyp) {
             case 0x01: //IP V4
                 // host = net.IPv4(b[4], b[5], b[6], b[7]).String()
                 byte[] inet4 = new byte[4];
                 int len = inputStream.read(inet4);
                 if (len < 4) {
-                    throw new IOException("Invalid ipv4 address");
+                    outputStream.write(INVALID_ADDR);
+                    outputStream.flush();
+                    return;
                 }
-                // dst = InetAddress.getByAddress(inet4);
+                address = InetAddress.getByAddress(inet4);
                 //logger.info("Get IPV4 Addr {}", dst.getHostAddress());
                 out.write(inet4);
                 break;
@@ -92,27 +99,32 @@ public class SocksRunner implements Runnable {
                 inputStream.read(host);
                 String h = new String(host);
                 logger.info("Get host = {}", h);
-                // dst = InetAddress.getByName(h);
+                address = InetAddress.getByName(h);
                 out.write(host);
                 break;
             case 0x04: //IP V6, 16 bytes
                 byte[] inet6 = new byte[16];
                 len = inputStream.read(inet6);
                 if (len < 16) {
-                    throw new IOException("Invalid ipv6 address");
+                    outputStream.write(INVALID_ADDR);
+                    outputStream.flush();
+                    return;
                 }
-              //  dst = InetAddress.getByAddress(inet6);
+                address = InetAddress.getByAddress(inet6);
                 out.write(inet6);
                 break;
             default: {
-                throw new IOException("Invalid Addr type {}" + atyp);
+                logger.info("Invalid Addr type {}" + atyp);
+                outputStream.write(INVALID_ADDR);
+                outputStream.flush();
+                return;
             }
         }
 
         out.close();
 
         int port =  inputStream.readShort();
-        logger.info("Read port = {}", port);
+        logger.info("Read address = {} {}", address, port);
       //  post(out.toByteArray(), atyp, port);
         logger.info("Request posted.");
 

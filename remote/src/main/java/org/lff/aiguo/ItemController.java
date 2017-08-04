@@ -119,7 +119,7 @@ public class ItemController {
         Socket worker = new Socket();
         InetSocketAddress remote = new InetSocketAddress(address, port);
         try {
-            logger.info("TO start to connect to {} {}", uid, remote );
+            logger.info("TO start to connect to {}", remote );
             worker.setKeepAlive(false);
             worker.setSoTimeout(15000);
             worker.setReceiveBufferSize(128 * 1024);
