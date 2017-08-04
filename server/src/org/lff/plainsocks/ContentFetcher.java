@@ -3,6 +3,7 @@ package org.lff.plainsocks;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
@@ -58,7 +59,16 @@ public class ContentFetcher implements Runnable{
                 String result = SimpleHttpClient.post("http://localhost:80/h/p", new HashMap<>(), cipher.encode(body));
                 logger.info("Finished fetch request");
                 String responseBody = result; //.getBody();
-                if (responseBody.isEmpty()) {
+                logger.info("Received fetch len = {}", responseBody.length());
+                byte[] r = Base64.getDecoder().decode(responseBody);
+                String json = new String(r);
+                JSONObject jsonObject = new JSONObject(json);
+                int status = jsonObject.optInt("status", Integer.MIN_VALUE);
+                logger.info("Get status {}", status);
+                if (status == -1) {
+                    return;
+                }
+                if (status == -2) {
                     emptyCount ++ ;
                     logger.info("Result is empty {}", emptyCount);
                     try {
@@ -67,12 +77,19 @@ public class ContentFetcher implements Runnable{
                         e.printStackTrace();
                     }
                     continue;
-                } else {
-                    emptyCount = 0;
                 }
-                logger.info("Received fetch len = {}", responseBody.length());
-                byte[] r = Base64.getDecoder().decode(responseBody);
-                outputStream.write(r);
+                if (status == 0) {
+                    emptyCount = 0;
+                    JSONArray array = jsonObject.getJSONArray("content");
+                    int length = array.length();
+                    byte[] buffer = new byte[length];
+                    for (int i=0; i<length; i++) {
+                        buffer[i] = (byte)array.getInt(i);
+                    }
+                    outputStream.write(buffer);
+                    outputStream.flush();
+                    buffer = null;
+                }
             } catch (Exception e) {
                 return;
             }

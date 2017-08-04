@@ -2,6 +2,8 @@ package org.lff.aiguo;
 
 import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
+import org.lff.aiguo.exception.InvalidRequest;
+import org.lff.aiguo.vo.FetchVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
@@ -145,23 +148,18 @@ public class ItemController {
     }
 
     @RequestMapping(path = "/p", method = RequestMethod.POST)
-    public @ResponseBody
-    String fetch(@RequestBody String body) {
-        logger.info("Getting a request for fetch.");
-        String json = cipher.decode(body);
-        JSONObject o = new JSONObject(json);
-        logger.info("Getting a fetch json {}", o.toString());
-        String uid = o.optString("uid");
+    public @ResponseBody String fetch(@RequestBody String body) {
+        String uid = null;
 
-        if (uid == null) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        try {
+            uid = getUid(body);
+        } catch (InvalidRequest e) {
+            return Base64.getEncoder().encodeToString(FetchVO.buildError().getBytes());
         }
-
-        MDC.put("uid", String.valueOf(uid.hashCode()));
 
         ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
         if (queue == null) {
-            return "";
+            return Base64.getEncoder().encodeToString(FetchVO.noContent().getBytes());
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -170,7 +168,7 @@ public class ItemController {
 
         if (buffer == null) {
             logger.info("Nothing to fetch, exit.");
-            return "";
+            return Base64.getEncoder().encodeToString(FetchVO.noContent().getBytes());
         }
         logger.info("Available bytes {}", buffer.length);
         while (buffer != null) {
@@ -182,7 +180,7 @@ public class ItemController {
 
         byte[] bytes = out.toByteArray();
         logger.info("Fetch Result = " + bytes.length);
-        String encoded = Base64.getEncoder().encodeToString(bytes);
+        String encoded = Base64.getEncoder().encodeToString(FetchVO.build(bytes).getBytes());
         logger.info("Encoded length = {}", encoded.length());
         return encoded;
     }
@@ -190,11 +188,16 @@ public class ItemController {
     @RequestMapping(path = "/d", method = RequestMethod.POST)
     public @ResponseBody
     String close(@RequestBody String body) {
-        logger.info("Getting a request for disconnect.");
-        String json = cipher.decode(body);
-        JSONObject o = new JSONObject(json);
-        logger.info("Getting a disconnect request json {}", o.toString());
-        String uid = o.optString("uid");
+
+        String uid = null;
+
+        try {
+            uid = getUid(body);
+        } catch (InvalidRequest e) {
+            return Base64.getEncoder().encodeToString("ERR".getBytes());
+        }
+
+
         ConcurrentLinkedQueue queue = bufferMap.remove(uid);
         if (queue != null) {
             queue.clear();
@@ -209,5 +212,22 @@ public class ItemController {
         }
 
         return Base64.getEncoder().encodeToString("OK".getBytes());
+    }
+
+    private String getUid(String body) throws InvalidRequest {
+        String uid = null;
+        try {
+            String json = cipher.decode(body);
+            JSONObject o = new JSONObject(json);
+            uid = o.optString("uid");
+            if (uid == null) {
+                return Base64.getEncoder().encodeToString("ERR".getBytes());
+            }
+            MDC.put("uid", String.valueOf(uid.hashCode()));
+            logger.info("Getting a disconnect json {}", o.toString());
+            return uid;
+        } catch (Exception e) {
+            throw new InvalidRequest(e.getMessage(), e);
+        }
     }
 }

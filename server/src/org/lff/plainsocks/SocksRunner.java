@@ -41,6 +41,7 @@ public class SocksRunner implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final byte[] NO_AUTH = new byte[]{0x05, 0x00};
+    private static final byte[] CONNECT_OK = new byte[]{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     private static final byte[] INVALID_ADDR = (new byte[]{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
     private static final byte[] FAILED_TO_CONNECT = (new byte[]{0x05, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
 
@@ -132,15 +133,15 @@ public class SocksRunner implements Runnable {
         logger.info("connected = {}", connected);
         switch (connected) {
             case "OK" : {
-                outputStream.write(new byte[]{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                outputStream.write(CONNECT_OK);
                 break;
             }
             case "Invalid Address" : {
-                outputStream.write(new byte[]{0x05, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                outputStream.write(INVALID_ADDR);
                 break;
             }
             case "Failed to connect": {
-                outputStream.write(new byte[]{0x05, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+                outputStream.write(FAILED_TO_CONNECT);
                 break;
             }
             case "Failed to start reader": {
@@ -157,6 +158,7 @@ public class SocksRunner implements Runnable {
         byte[] buffer = new byte[1024 * 32];
         AtomicBoolean exited = new AtomicBoolean(false);
         ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
+        pool.submit(fetcher);
         try {
 
             int len = 0;
@@ -166,15 +168,15 @@ public class SocksRunner implements Runnable {
                     byte[] source = new byte[len];
                     System.arraycopy(buffer, 0, source, 0, len);
                     byte[] result = post(uid, out.toByteArray(), atyp, port, source);
-                    pool.submit(fetcher);
                 }
             }
             logger.info("InputStream exited.");
-            exited.set(true);
-            disconnect(uid);
         } catch (IOException e) {
-            e.printStackTrace();
+
         }
+
+        exited.set(true);
+        disconnect(uid);
     }
 
     private void disconnect(String uid) {
@@ -211,7 +213,7 @@ public class SocksRunner implements Runnable {
         } catch (UnirestException e) {
             e.printStackTrace();
         }
-        return null;
+        return "Failed to connect";
     }
 
     private byte[] post(String uid, byte[] dst, int atyp, int port, byte[] buffer) {

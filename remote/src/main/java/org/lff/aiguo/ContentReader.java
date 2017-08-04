@@ -26,11 +26,11 @@ public class ContentReader implements Runnable {
         this.uid = uid;
         this.inputStream = inputStream;
         this.queue = queue;
-        MDC.put("uid", String.valueOf(uid.hashCode()));
     }
 
     @Override
     public void run() {
+        MDC.put("uid", String.valueOf(uid.hashCode()));
         byte[] buffer = new byte[1024 * 1024];
         int len = 0;
         while (len > -1) {
