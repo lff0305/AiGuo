@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -28,8 +29,12 @@ public class SocksRunner implements Runnable {
 
     private final Socket socket;
 
+    private final String uid;
+
     public SocksRunner(Socket socket) {
         this.socket = socket;
+        this.uid = UUID.randomUUID().toString();
+        MDC.put("uid", String.valueOf(uid.hashCode()));
     }
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -61,7 +66,6 @@ public class SocksRunner implements Runnable {
     }
 
     private void connect(final DataInputStream inputStream, final OutputStream outputStream) throws IOException {
-        String uid = UUID.randomUUID().toString();
         int ver = inputStream.read();
         int cmd = inputStream.read();
         int rsv = inputStream.read();
@@ -169,8 +173,9 @@ public class SocksRunner implements Runnable {
 
         SimpleAESCipher cipher = new SimpleAESCipher();
 
-        logger.info("To send disconnect request to remote {}", body);
+        logger.info("To send disconnect request to remote");
         Unirest.post("http://localhost:80/h/d").body(cipher.encode(body)).asStringAsync();
+        logger.info("Disconnect request to remote was sent");
     }
 
     private String connect(String uid, byte[] dst, int atyp, int port) {

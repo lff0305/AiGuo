@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,7 +36,7 @@ public class ContentFetcher implements Runnable{
 
     @Override
     public void run() {
-
+        MDC.put("uid", String.valueOf(uid.hashCode()));
         logger.info("Fetcher started.");
 
         int emptyCount = 0;
