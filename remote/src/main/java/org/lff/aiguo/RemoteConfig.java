@@ -27,12 +27,20 @@ public class RemoteConfig {
         this.manualDelay = manualDelay;
     }
 
-    @Value("${manualDelay}")
+    @Value("${manualDelay.enabled}")
     private boolean manualDelay;
+
+    @Value("${manualDelay.max}")
+    private int manualDelayTime;
+
+    public int getManualDelayTime() {
+        return manualDelayTime;
+    }
 
     @PostConstruct
     public void init() {
         logger.info("Config : manualDelay = {}", manualDelay);
+        logger.info("Config : manualDelayTime(ms) = {}", manualDelayTime);
     }
 
 }

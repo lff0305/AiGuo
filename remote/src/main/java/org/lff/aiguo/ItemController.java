@@ -239,7 +239,7 @@ public class ItemController {
     private void delayIfConfigured() {
         if (config.isManualDelay()) {
             try {
-                long s = (int)(5000 * Math.random());
+                long s = (int)(config.getManualDelayTime() * Math.random());
                 logger.info("Sleep {} for manual delay", s);
                 Thread.sleep(s);
             } catch (InterruptedException e) {
