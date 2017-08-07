@@ -31,6 +31,10 @@ public class ContentReader implements Runnable {
     @Override
     public void run() {
         MDC.put("uid", String.valueOf(uid.hashCode()));
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
         byte[] buffer = new byte[1024 * 1024];
         int len = 0;
         while (len > -1) {

@@ -61,7 +61,7 @@ public class ContentFetcher implements Runnable{
         int emptyCount = 0;
         int errorCount = 0;
         int stopCount = 0;
-        while (emptyCount < 3 && errorCount < 2) {
+        while (emptyCount < 10 && errorCount < 2) {
             if (stopped.get() && stopCount++ > 1) {
                 return;
             }
@@ -94,7 +94,7 @@ public class ContentFetcher implements Runnable{
                     emptyCount ++ ;
                     logger.info("Result is empty {}", emptyCount);
                     try {
-                        Thread.sleep(emptyCount * 500);
+                        Thread.sleep(emptyCount * 100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
