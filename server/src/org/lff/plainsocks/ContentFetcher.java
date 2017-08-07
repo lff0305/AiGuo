@@ -108,9 +108,13 @@ public class ContentFetcher implements Runnable{
                     for (int i=0; i<length; i++) {
                         buffer[i] = (byte)array.getInt(i);
                     }
-                    outputStream.write(buffer);
-                    outputStream.flush();
-                    buffer = null;
+                    try {
+                        outputStream.write(buffer);
+                        outputStream.flush();
+                        buffer = null;
+                    } catch (Exception e) {
+                        logger.info("Write to output failed, closed ?");
+                    }
                 }
             } catch (Exception e) {
                 return;
