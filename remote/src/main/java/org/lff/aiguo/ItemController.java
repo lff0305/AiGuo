@@ -7,6 +7,7 @@ import org.lff.aiguo.vo.FetchVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,9 @@ import java.util.concurrent.Executors;
 @RequestMapping("/h")
 public class ItemController {
 
+    @Autowired
+    RemoteConfig config;
+
     static ConcurrentHashMap<String, Socket> socketsMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, ConcurrentLinkedQueue<byte[]>> bufferMap = new ConcurrentHashMap<>();
 
@@ -46,7 +50,7 @@ public class ItemController {
     @RequestMapping(path = "/c", method = RequestMethod.POST)
     public @ResponseBody
     String doit(@RequestBody String body) throws IOException {
-
+        delayIfConfigured();
         logger.info("Getting a request for work");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
@@ -86,6 +90,8 @@ public class ItemController {
     @RequestMapping(path = "/g", method = RequestMethod.POST)
     public @ResponseBody
     String connect(@RequestBody String body) {
+        delayIfConfigured();
+        MDC.put("uid", "CONN");
         logger.info("Getting a request for connect");
         String json = cipher.decode(body);
         JSONObject o = new JSONObject(json);
@@ -150,7 +156,7 @@ public class ItemController {
     @RequestMapping(path = "/p", method = RequestMethod.POST)
     public @ResponseBody String fetch(@RequestBody String body) {
         String uid = null;
-
+        delayIfConfigured();
         try {
             uid = getUid(body);
         } catch (InvalidRequest e) {
@@ -188,11 +194,11 @@ public class ItemController {
     @RequestMapping(path = "/d", method = RequestMethod.POST)
     public @ResponseBody
     String close(@RequestBody String body) {
-
         String uid = null;
-
         try {
             uid = getUid(body);
+            logger.info("close got for {}", uid);
+            delayIfConfigured();
         } catch (InvalidRequest e) {
             return Base64.getEncoder().encodeToString("ERR".getBytes());
         }
@@ -224,10 +230,20 @@ public class ItemController {
                 return Base64.getEncoder().encodeToString("ERR".getBytes());
             }
             MDC.put("uid", String.valueOf(uid.hashCode()));
-            logger.info("Getting a disconnect json {}", o.toString());
             return uid;
         } catch (Exception e) {
             throw new InvalidRequest(e.getMessage(), e);
+        }
+    }
+
+    private void delayIfConfigured() {
+        if (config.isManualDelay()) {
+            try {
+                long s = (int)(5000 * Math.random());
+                logger.info("Sleep {} for manual delay", s);
+                Thread.sleep(s);
+            } catch (InterruptedException e) {
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package org.lff.plainsocks;
 
+import org.lff.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -19,7 +20,7 @@ public class Server {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static ExecutorService pool = Executors.newFixedThreadPool(256);
+    private static ExecutorService pool = Executors.newFixedThreadPool(256, new NamedThreadFactory("ConnectionPool"));
 
     public static void main(String[] argu) throws IOException {
         MDC.put("uid", "BASE");

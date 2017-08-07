@@ -4,6 +4,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONObject;
+import org.lff.NamedThreadFactory;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class SocksRunner implements Runnable {
 
-    private static ExecutorService pool = Executors.newFixedThreadPool(256);
-
+    private static ExecutorService pool = Executors.newFixedThreadPool(256, new NamedThreadFactory("Socks5Pool"));
+    private static ExecutorService reader = Executors.newFixedThreadPool(256, new NamedThreadFactory("InputReader"));
     private final Socket socket;
 
     private final String uid;
@@ -124,7 +125,7 @@ public class SocksRunner implements Runnable {
 
         out.close();
 
-        int port =  inputStream.readShort();
+        int port =  inputStream.readUnsignedShort();
         logger.info("Read address = {} {}", address, port);
       //  post(out.toByteArray(), atyp, port);
         logger.info("Request posted.");
@@ -153,30 +154,35 @@ public class SocksRunner implements Runnable {
         outputStream.flush();
         logger.info("Response {} to client", connected);
         if (!connected.equals("OK")) {
+            outputStream.close();
             return;
         }
         byte[] buffer = new byte[1024 * 32];
         AtomicBoolean exited = new AtomicBoolean(false);
         ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
         pool.submit(fetcher);
-        try {
-
-            int len = 0;
-            while (len != -1) {
-                len = inputStream.read(buffer);
-                if (len > 0) {
-                    byte[] source = new byte[len];
-                    System.arraycopy(buffer, 0, source, 0, len);
-                    byte[] result = post(uid, out.toByteArray(), atyp, port, source);
+        reader.submit(()-> {
+            try {
+                int readCount = 0;
+                int len = 0;
+                while (len != -1) {
+                    len = inputStream.read(buffer);
+                    logger.info("{}: Read {} bytes from socket source", ++readCount, len);
+                    if (len > 0) {
+                        byte[] source = new byte[len];
+                        System.arraycopy(buffer, 0, source, 0, len);
+                        byte[] result = post(uid, out.toByteArray(), atyp, port, source);
+                    }
                 }
+                logger.info("InputStream exited.");
+                exited.set(true);
+            } catch (IOException e) {
+
             }
-            logger.info("InputStream exited.");
-        } catch (IOException e) {
-
-        }
-
-        exited.set(true);
+        });
+        fetcher.waitForExit();
         disconnect(uid);
+        outputStream.close();
     }
 
     private void disconnect(String uid) {

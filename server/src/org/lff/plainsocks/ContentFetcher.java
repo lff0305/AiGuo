@@ -15,7 +15,10 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * @author Feifei Liu
@@ -23,11 +26,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ContentFetcher implements Runnable{
 
+    private static LongAdder sequence = new LongAdder();
+
+    private Semaphore s = new Semaphore(0);
+
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private String uid;
     private OutputStream outputStream;
     private AtomicBoolean stopped;
+    private Map<Long, byte[]> window = new HashMap<>();
+
 
     public ContentFetcher(String uid, OutputStream outputStream, AtomicBoolean stopped) {
         this.uid = uid;
@@ -40,9 +49,22 @@ public class ContentFetcher implements Runnable{
         MDC.put("uid", String.valueOf(uid.hashCode()));
         logger.info("Fetcher started.");
 
+        try {
+            work();
+        } finally {
+            logger.info("work finished");
+            s.release();
+        }
+    }
+
+    private void work() {
         int emptyCount = 0;
         int errorCount = 0;
-        while (!stopped.get() && emptyCount < 3 && errorCount < 2) {
+        int stopCount = 0;
+        while (emptyCount < 3 && errorCount < 2) {
+            if (stopped.get() && stopCount++ > 1) {
+                return;
+            }
             try {
 
                 JSONObject o = new JSONObject();
@@ -93,6 +115,13 @@ public class ContentFetcher implements Runnable{
             } catch (Exception e) {
                 return;
             }
+        }
+    }
+
+    public void waitForExit() {
+        try {
+            s.acquire(1);
+        } catch (InterruptedException e) {
         }
     }
 }
