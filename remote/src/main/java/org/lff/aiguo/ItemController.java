@@ -14,14 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Base64;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -62,14 +60,14 @@ public class ItemController {
         }
         String uid = o.getString("uid");
         if (uid == null) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+            return cipher.encode("ERR");
         }
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
         Socket worker = socketsMap.get(uid);
 
         if (worker == null) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+            return cipher.encode("ERR");
         }
 
         try {
@@ -78,13 +76,13 @@ public class ItemController {
                 worker.getOutputStream().write(buffer, 0, buffer.length);
             }
         } catch (IOException e) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+            return cipher.encode("ERR");
         }
 
 
         logger.info("OK returned");
 
-        return Base64.getEncoder().encodeToString("OK".getBytes());
+        return cipher.encode("OK");
     }
 
     @RequestMapping(path = "/g", method = RequestMethod.POST)
@@ -102,7 +100,7 @@ public class ItemController {
         String uid = o.optString("uid");
         InetAddress address = null;
         if (uid == null) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+            return cipher.encode("ERR");
         }
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
@@ -122,7 +120,7 @@ public class ItemController {
                 }
             }
         } catch (Exception e) {
-            return Base64.getEncoder().encodeToString("Invalid Address".getBytes());
+            return cipher.encode("Invalid Address");
         }
 
         Socket worker = new Socket();
@@ -136,7 +134,7 @@ public class ItemController {
             logger.info("Connect to {} {} successfully.", uid, remote );
         } catch (Exception e) {
             logger.info("Failed to connect to {} {} ", uid, remote, e);
-            return Base64.getEncoder().encodeToString("Failed to connect".getBytes());
+            return cipher.encode("Failed to connect".getBytes());
         }
 
         socketsMap.put(uid, worker);
@@ -147,10 +145,10 @@ public class ItemController {
             pool.submit(reader);
         } catch (Exception e) {
             logger.error("Failed to start reader", e);
-            return Base64.getEncoder().encodeToString("Failed to start reader".getBytes());
+            return cipher.encode("Failed to start reader".getBytes());
         }
 
-        return Base64.getEncoder().encodeToString("OK".getBytes());
+        return cipher.encode("OK");
     }
 
     @RequestMapping(path = "/p", method = RequestMethod.POST)
@@ -160,12 +158,12 @@ public class ItemController {
         try {
             uid = getUid(body);
         } catch (InvalidRequest e) {
-            return Base64.getEncoder().encodeToString(FetchVO.buildError().getBytes());
+            return cipher.encode(FetchVO.buildError().getBytes());
         }
 
         ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
         if (queue == null) {
-            return Base64.getEncoder().encodeToString(FetchVO.noContent().getBytes());
+            return cipher.encode(FetchVO.noContent().getBytes());
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -174,7 +172,7 @@ public class ItemController {
 
         if (buffer == null) {
             logger.info("Nothing to fetch, exit.");
-            return Base64.getEncoder().encodeToString(FetchVO.noContent().getBytes());
+            return cipher.encode(FetchVO.noContent().getBytes());
         }
         logger.info("Available bytes {}", buffer.length);
         while (buffer != null) {
@@ -186,7 +184,7 @@ public class ItemController {
 
         byte[] bytes = out.toByteArray();
         logger.info("Fetch Result = " + bytes.length);
-        String encoded = Base64.getEncoder().encodeToString(FetchVO.build(bytes).getBytes());
+        String encoded = cipher.encode(FetchVO.build(bytes).getBytes());
         logger.info("Encoded length = {}", encoded.length());
         return encoded;
     }
@@ -200,7 +198,7 @@ public class ItemController {
             logger.info("close got for {}", uid);
             delayIfConfigured();
         } catch (InvalidRequest e) {
-            return Base64.getEncoder().encodeToString("ERR".getBytes());
+            return cipher.encode("ERR");
         }
 
 
@@ -217,7 +215,7 @@ public class ItemController {
         } catch (IOException e) {
         }
 
-        return Base64.getEncoder().encodeToString("OK".getBytes());
+        return cipher.encode("OK");
     }
 
     private String getUid(String body) throws InvalidRequest {
@@ -227,7 +225,7 @@ public class ItemController {
             JSONObject o = new JSONObject(json);
             uid = o.optString("uid");
             if (uid == null) {
-                return Base64.getEncoder().encodeToString("ERR".getBytes());
+                return cipher.encode("ERR");
             }
             MDC.put("uid", String.valueOf(uid.hashCode()));
             return uid;

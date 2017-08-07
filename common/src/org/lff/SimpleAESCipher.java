@@ -24,15 +24,34 @@ public class SimpleAESCipher implements BytesCipher {
 
     @Override
     public String encode(String source) {
+        return encode(source.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String encode(byte[] source) {
         try {
             Cipher d = Cipher.getInstance("AES");
             d.init(Cipher.ENCRYPT_MODE, secretKey);
-            return Base64.getEncoder().encodeToString(d.doFinal(source.getBytes(StandardCharsets.UTF_8)));
+            return Base64.getEncoder().encodeToString(d.doFinal(source));
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
+
+    @Override
+    public byte[] decodeBytes(String encoded) {
+        try {
+            Cipher d = Cipher.getInstance("AES");
+            d.init(Cipher.DECRYPT_MODE, secretKey);
+            byte[] r = (d.doFinal(Base64.getDecoder().decode(encoded)));
+            return r;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     @Override
     public String decode(String encoded) {

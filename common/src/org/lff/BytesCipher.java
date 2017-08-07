@@ -6,6 +6,7 @@ package org.lff;
  */
 public interface BytesCipher {
     public String encode(String source);
-
+    public String encode(byte[] source);
+    public byte[] decodeBytes(String source);
     public String decode(String encoded);
 }

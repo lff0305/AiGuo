@@ -215,7 +215,7 @@ public class SocksRunner implements Runnable {
                     .body(cipher.encode(body))
                     .asString();
             logger.info("Result from remote is ", result.getStatus());
-            return new String(Base64.getDecoder().decode(result.getBody()));
+            return cipher.decode(result.getBody());
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -240,7 +240,7 @@ public class SocksRunner implements Runnable {
                     .body(cipher.encode(body))
                     .asString();
             logger.info("Result from remote is ", result.getStatus());
-            return Base64.getDecoder().decode(result.getBody());
+            return cipher.decodeBytes(result.getBody());
         } catch (UnirestException e) {
             e.printStackTrace();
         }

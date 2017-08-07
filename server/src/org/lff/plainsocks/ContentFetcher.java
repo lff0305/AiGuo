@@ -82,8 +82,7 @@ public class ContentFetcher implements Runnable{
                 logger.info("Finished fetch request");
                 String responseBody = result; //.getBody();
                 logger.info("Received fetch len = {}", responseBody.length());
-                byte[] r = Base64.getDecoder().decode(responseBody);
-                String json = new String(r);
+                String json = cipher.decode(responseBody);
                 JSONObject jsonObject = new JSONObject(json);
                 int status = jsonObject.optInt("status", Integer.MIN_VALUE);
                 logger.info("Get status {}", status);
