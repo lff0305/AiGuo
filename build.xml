@@ -1,29 +1,8 @@
-<project basedir=".">
+<project basedir="." default="build">
 
     <target name="clean">
-        <delete dir="./common/dist">
-
-        </delete>
-        <mkdir dir="./common/dist"></mkdir>
-        <mkdir dir="./common/dist/bin"></mkdir>
     </target>
-    <target name="compile" depends="clean">
-
-        <path id="commonlib">
-            <fileset dir="./common/lib" includes="*.jar"/>
-        </path>
-
-        <javac srcdir="./common/src" destdir="./common/dist/bin">
-            <classpath refid="commonlib"></classpath>
-        </javac>
-    </target>
-    <target name="common" depends="clean, compile">
-        <jar destfile="remote/target/aiguo-0.0.1-SNAPSHOT.jar"
-             update="true" compress="false">
-            <zipfileset dir="./common/dist/bin" prefix="BOOT-INF/classes" />
-        </jar>
-    </target>
-    <target name="build" depends="common">
+    <target name="build" depends="clean">
 
     </target>
 </project>

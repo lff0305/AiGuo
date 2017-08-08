@@ -1,0 +1,31 @@
+<project basedir="." default="build">
+
+    <target name="clean">
+        <delete dir="./dist">
+
+        </delete>
+        <mkdir dir="./dist"></mkdir>
+        <mkdir dir="./dist/bin"></mkdir>
+    </target>
+    <target name="compile" depends="clean">
+
+        <path id="commonlib">
+            <fileset dir="./lib" includes="*.jar"/>
+        </path>
+
+        <javac srcdir="./src" destdir="./dist/bin">
+            <classpath refid="commonlib"></classpath>
+        </javac>
+    </target>
+    <target name="common" depends="clean, compile">
+        <jar destfile="./dist/common.jar"
+        update="true" compress="false">
+            <fileset dir="./dist/bin">
+
+            </fileset>
+        </jar>
+    </target>
+    <target name="build" depends="common">
+
+    </target>
+</project>

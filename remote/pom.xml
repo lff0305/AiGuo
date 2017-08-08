@@ -52,6 +52,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>common</groupId>
+			<artifactId>oirg.lff</artifactId>
+			<version>0.0.1</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/../common/dist/common.jar</systemPath>
+		</dependency>
+
 	</dependencies>
 
 	<build>
