@@ -17,10 +17,9 @@ public class SimpleAESCipher implements BytesCipher {
 
     private static SecretKeySpec secretKey = null;
 
-    static {
-        secretKey = new SecretKeySpec(Base64.getDecoder().decode(KEY), "AES");
+    public SimpleAESCipher(byte[] key) {
+        secretKey = new SecretKeySpec(key, "AES");
     }
-
 
     @Override
     public String encode(String source) {
@@ -68,7 +67,7 @@ public class SimpleAESCipher implements BytesCipher {
 
     public static void main(String[] argu) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         String s = "q23rasefasdfasdf";
-        SimpleAESCipher c = new SimpleAESCipher();
+        SimpleAESCipher c = new SimpleAESCipher(Base64.getDecoder().decode(KEY));
         System.out.println(c.decode(c.encode(s)));
     }
 }

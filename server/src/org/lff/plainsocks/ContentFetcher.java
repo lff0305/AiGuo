@@ -5,6 +5,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.lff.BytesCipher;
 import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,11 @@ public class ContentFetcher implements Runnable{
     private OutputStream outputStream;
     private AtomicBoolean stopped;
     private Map<Long, byte[]> window = new HashMap<>();
+    private final BytesCipher cipher;
 
-
-    public ContentFetcher(String uid, OutputStream outputStream, AtomicBoolean stopped) {
+    public ContentFetcher(BytesCipher cipher, String uid, OutputStream outputStream, AtomicBoolean stopped) {
         this.uid = uid;
+        this.cipher = cipher;
         this.outputStream = outputStream;
         this.stopped = stopped;
     }
@@ -71,8 +73,6 @@ public class ContentFetcher implements Runnable{
                 o.put("uid", uid);
 
                 String body = o.toString();
-
-                SimpleAESCipher cipher = new SimpleAESCipher();
 
                 logger.info("Start to post fetch request");
 //                HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")

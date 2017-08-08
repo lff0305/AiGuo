@@ -1,5 +1,6 @@
 package org.lff.plainsocks;
 
+import org.lff.BytesCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +22,8 @@ public class Processor {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-    public static void process(Socket socket) throws IOException {
-        SocksRunner r = new SocksRunner(socket);
+    public static void process(Socket socket, BytesCipher cipher) throws IOException {
+        SocksRunner r = new SocksRunner(socket, cipher);
         r.run();
     }
 }

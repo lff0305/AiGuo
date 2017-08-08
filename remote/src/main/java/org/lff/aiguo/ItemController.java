@@ -1,8 +1,11 @@
 package org.lff.aiguo;
 
 import org.json.JSONObject;
+import org.lff.BytesCipher;
+import org.lff.ECCipher;
 import org.lff.SimpleAESCipher;
 import org.lff.aiguo.exception.InvalidRequest;
+import org.lff.aiguo.service.KeyService;
 import org.lff.aiguo.vo.FetchVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
@@ -43,14 +47,23 @@ public class ItemController {
 
     private static ExecutorService pool = Executors.newFixedThreadPool(256);
 
-    private SimpleAESCipher cipher = new SimpleAESCipher();
+    private BytesCipher keyCipher;
+    private BytesCipher contentCipher = null;
+
+    @Autowired
+    private KeyService keyService;
+
+    @PostConstruct
+    private void init() {
+        keyCipher = new ECCipher(config.getEcPublic(), config.getEcPrivate());
+    }
 
     @RequestMapping(path = "/c", method = RequestMethod.POST)
     public @ResponseBody
     String doit(@RequestBody String body) throws IOException {
         delayIfConfigured();
         logger.info("Getting a request for work");
-        String json = cipher.decode(body);
+        String json = contentCipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a work request json {}", o.toString());
         byte[] buffer = new byte[]{};
@@ -60,14 +73,14 @@ public class ItemController {
         }
         String uid = o.getString("uid");
         if (uid == null) {
-            return cipher.encode("ERR");
+            return contentCipher.encode("ERR");
         }
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
         Socket worker = socketsMap.get(uid);
 
         if (worker == null) {
-            return cipher.encode("ERR");
+            return contentCipher.encode("ERR");
         }
 
         try {
@@ -76,13 +89,13 @@ public class ItemController {
                 worker.getOutputStream().write(buffer, 0, buffer.length);
             }
         } catch (IOException e) {
-            return cipher.encode("ERR");
+            return contentCipher.encode("ERR");
         }
 
 
         logger.info("OK returned");
 
-        return cipher.encode("OK");
+        return contentCipher.encode("OK");
     }
 
     @RequestMapping(path = "/g", method = RequestMethod.POST)
@@ -91,7 +104,7 @@ public class ItemController {
         delayIfConfigured();
         MDC.put("uid", "CONN");
         logger.info("Getting a request for connect");
-        String json = cipher.decode(body);
+        String json = contentCipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a connect request json {}", o.toString());
         byte[] dst = Base64.getDecoder().decode(o.getString("dist"));
@@ -100,7 +113,7 @@ public class ItemController {
         String uid = o.optString("uid");
         InetAddress address = null;
         if (uid == null) {
-            return cipher.encode("ERR");
+            return contentCipher.encode("ERR");
         }
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
@@ -120,7 +133,7 @@ public class ItemController {
                 }
             }
         } catch (Exception e) {
-            return cipher.encode("Invalid Address");
+            return contentCipher.encode("Invalid Address");
         }
 
         Socket worker = new Socket();
@@ -134,7 +147,7 @@ public class ItemController {
             logger.info("Connect to {} {} successfully.", uid, remote );
         } catch (Exception e) {
             logger.info("Failed to connect to {} {} ", uid, remote, e);
-            return cipher.encode("Failed to connect".getBytes());
+            return contentCipher.encode("Failed to connect".getBytes());
         }
 
         socketsMap.put(uid, worker);
@@ -145,10 +158,10 @@ public class ItemController {
             pool.submit(reader);
         } catch (Exception e) {
             logger.error("Failed to start reader", e);
-            return cipher.encode("Failed to start reader".getBytes());
+            return contentCipher.encode("Failed to start reader".getBytes());
         }
 
-        return cipher.encode("OK");
+        return contentCipher.encode("OK");
     }
 
     @RequestMapping(path = "/p", method = RequestMethod.POST)
@@ -158,12 +171,12 @@ public class ItemController {
         try {
             uid = getUid(body);
         } catch (InvalidRequest e) {
-            return cipher.encode(FetchVO.buildError().getBytes());
+            return contentCipher.encode(FetchVO.buildError().getBytes());
         }
 
         ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
         if (queue == null) {
-            return cipher.encode(FetchVO.noContent().getBytes());
+            return contentCipher.encode(FetchVO.noContent().getBytes());
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -172,7 +185,7 @@ public class ItemController {
 
         if (buffer == null) {
             logger.info("Nothing to fetch, exit.");
-            return cipher.encode(FetchVO.noContent().getBytes());
+            return contentCipher.encode(FetchVO.noContent().getBytes());
         }
         logger.info("Available bytes {}", buffer.length);
         while (buffer != null) {
@@ -184,7 +197,7 @@ public class ItemController {
 
         byte[] bytes = out.toByteArray();
         logger.info("Fetch Result = " + bytes.length);
-        String encoded = cipher.encode(FetchVO.build(bytes).getBytes());
+        String encoded = contentCipher.encode(FetchVO.build(bytes).getBytes());
         logger.info("Encoded length = {}", encoded.length());
         return encoded;
     }
@@ -198,7 +211,7 @@ public class ItemController {
             logger.info("close got for {}", uid);
             delayIfConfigured();
         } catch (InvalidRequest e) {
-            return cipher.encode("ERR");
+            return contentCipher.encode("ERR");
         }
 
 
@@ -215,17 +228,29 @@ public class ItemController {
         } catch (IOException e) {
         }
 
-        return cipher.encode("OK");
+        return contentCipher.encode("OK");
+    }
+
+    @RequestMapping(path = "/k", method = RequestMethod.GET)
+    public @ResponseBody
+    String key() {
+        try {
+            byte[] key = keyService.generateAESKey();
+            this.contentCipher = new SimpleAESCipher(key);
+            return keyCipher.encode(key);
+        } catch (Exception e) {
+            return keyCipher.encode("ERR");
+        }
     }
 
     private String getUid(String body) throws InvalidRequest {
         String uid = null;
         try {
-            String json = cipher.decode(body);
+            String json = contentCipher.decode(body);
             JSONObject o = new JSONObject(json);
             uid = o.optString("uid");
             if (uid == null) {
-                return cipher.encode("ERR");
+                return contentCipher.encode("ERR");
             }
             MDC.put("uid", String.valueOf(uid.hashCode()));
             return uid;

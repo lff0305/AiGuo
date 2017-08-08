@@ -14,10 +14,9 @@ import java.util.Base64;
 
 /**
  * @author Feifei Liu
- * @datetime Aug 07 2017 17:32
+ * @datetime Aug 08 2017 10:10
  */
-public class ECCipher implements BytesCipher {
-
+public class RSACipher implements BytesCipher {
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -30,7 +29,7 @@ public class ECCipher implements BytesCipher {
     @Override
     public String encode(byte[] source) {
         try {
-            Cipher d = Cipher.getInstance("ECIES", "BC");
+            Cipher d = Cipher.getInstance("RSA", "BC");
             d.init(Cipher.ENCRYPT_MODE, this.pubKey);
             return Base64.getEncoder().encodeToString(d.doFinal(source));
         } catch (Exception e) {
@@ -42,7 +41,7 @@ public class ECCipher implements BytesCipher {
     @Override
     public byte[] decodeBytes(String source) {
         try {
-            Cipher d = Cipher.getInstance("ECIES", "BC");
+            Cipher d = Cipher.getInstance("RSA", "BC");
             d.init(Cipher.DECRYPT_MODE, this.privKey);
             return d.doFinal(Base64.getDecoder().decode(source));
         } catch (Exception e) {
@@ -60,7 +59,9 @@ public class ECCipher implements BytesCipher {
     PublicKey pubKey;
     PrivateKey privKey;
 
-    public ECCipher(String pub, String priv) {
+    public RSACipher() {
+        String pub = Configuration.getData().getString("publicrsa");
+        String priv = Configuration.getData().getString("privatersa");
 
         X509EncodedKeySpec publicKey = new X509EncodedKeySpec(Base64.getDecoder().decode(pub));
         PKCS8EncodedKeySpec privateKey = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(priv));
@@ -69,7 +70,7 @@ public class ECCipher implements BytesCipher {
         System.out.println("PRIV=" + Base64.getEncoder().encodeToString(privateKey.getEncoded()));
 
         try {
-            KeyFactory kf = KeyFactory.getInstance("EC", "BC");
+            KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
             pubKey = kf.generatePublic(publicKey);
             privKey = kf.generatePrivate(privateKey);
         } catch (Exception e) {
@@ -79,12 +80,10 @@ public class ECCipher implements BytesCipher {
 
     public static void main(String[] argu) throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeySpecException {
 
-        // generate();
+        generate();
         String s = "asfdasf2341234#@$!@#$sadfasdf";
 
-        String pub = Configuration.getData().getString("public");
-        String priv = Configuration.getData().getString("private");
-        ECCipher ecCipher = new ECCipher(pub, priv);
+        BytesCipher ecCipher = new RSACipher();
 
         long l0 = System.currentTimeMillis();
         String r = ecCipher.encode(s);
@@ -95,9 +94,8 @@ public class ECCipher implements BytesCipher {
     }
 
     private static void generate() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException, InvalidKeySpecException {
-        ECParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec("secp192r1");
-        KeyPairGenerator g = KeyPairGenerator.getInstance("EC", "BC");
-        g.initialize(ecSpec, new SecureRandom());
+        KeyPairGenerator g = KeyPairGenerator.getInstance("RSA", "BC");
+        g.initialize(128, new SecureRandom());
         KeyPair pair = g.generateKeyPair();
 
         X509EncodedKeySpec publicKey = new X509EncodedKeySpec(pair.getPublic().getEncoded());
@@ -106,9 +104,8 @@ public class ECCipher implements BytesCipher {
         System.out.println("PUB=" + Base64.getEncoder().encodeToString(publicKey.getEncoded()));
         System.out.println("PRIV=" + Base64.getEncoder().encodeToString(privateKey.getEncoded()));
 
-        KeyFactory kf = KeyFactory.getInstance("ECDSA", "BC");
+        KeyFactory kf = KeyFactory.getInstance("RSA", "BC");
         PublicKey pubKeyu =  kf.generatePublic(publicKey);
         PrivateKey privKey =  kf.generatePrivate(privateKey);
     }
-
 }

@@ -4,8 +4,8 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONObject;
+import org.lff.BytesCipher;
 import org.lff.NamedThreadFactory;
-import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -13,7 +13,6 @@ import org.slf4j.MDC;
 import java.io.*;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Base64;
@@ -33,11 +32,13 @@ public class SocksRunner implements Runnable {
     private final Socket socket;
 
     private final String uid;
+    private final BytesCipher cipher;
 
-    public SocksRunner(Socket socket) {
+    public SocksRunner(Socket socket, BytesCipher cipher) {
         this.socket = socket;
         this.uid = UUID.randomUUID().toString();
         MDC.put("uid", String.valueOf(uid.hashCode()));
+        this.cipher = cipher;
     }
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -159,7 +160,7 @@ public class SocksRunner implements Runnable {
         }
         byte[] buffer = new byte[1024 * 32];
         AtomicBoolean exited = new AtomicBoolean(false);
-        ContentFetcher fetcher = new ContentFetcher(uid, outputStream, exited);
+        ContentFetcher fetcher = new ContentFetcher(cipher, uid, outputStream, exited);
         pool.submit(fetcher);
         reader.submit(()-> {
             try {
@@ -191,8 +192,6 @@ public class SocksRunner implements Runnable {
 
         String body = o.toString();
 
-        SimpleAESCipher cipher = new SimpleAESCipher();
-
         logger.info("To send disconnect request to remote");
         Unirest.post("http://localhost:80/h/d").body(cipher.encode(body)).asStringAsync();
         logger.info("Disconnect request to remote was sent");
@@ -206,8 +205,6 @@ public class SocksRunner implements Runnable {
         o.put("uid", uid);
 
         String body = o.toString();
-
-        SimpleAESCipher cipher = new SimpleAESCipher();
 
         try {
             logger.info("To send request to remote {}", body);
@@ -231,8 +228,6 @@ public class SocksRunner implements Runnable {
         o.put("buffer", Base64.getEncoder().encodeToString(buffer));
 
         String body = o.toString();
-
-        SimpleAESCipher cipher = new SimpleAESCipher();
 
         try {
             logger.info("To send request to remote {}", body);

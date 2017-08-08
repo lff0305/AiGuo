@@ -33,6 +33,20 @@ public class RemoteConfig {
     @Value("${manualDelay.max}")
     private int manualDelayTime;
 
+    @Value("${ec.public}")
+    private String ecPublic;
+
+    public String getEcPublic() {
+        return ecPublic;
+    }
+
+    public String getEcPrivate() {
+        return ecPrivate;
+    }
+
+    @Value("${ec.private}")
+    private String ecPrivate;
+
     public int getManualDelayTime() {
         return manualDelayTime;
     }

@@ -24,4 +24,8 @@ public class Configuration {
     public static com.typesafe.config.Config getData() {
         return data;
     }
+
+    public static String getData(String key) {
+        return data.getString(key);
+    }
 }

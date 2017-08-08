@@ -1,5 +1,8 @@
 package org.lff.plainsocks;
 
+import org.lff.BytesCipher;
+import org.lff.Configuration;
+import org.lff.ECCipher;
 import org.lff.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +12,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,6 +30,16 @@ public class Server {
         MDC.put("uid", "BASE");
         logger.info("To Start....");
 
+        String aes = fetchAES();
+        logger.info("Get AES from remote server = {}", aes);
+
+        String ecpublic = Configuration.getData("public");
+        String ecprivate = Configuration.getData("private");
+
+        ECCipher keyCipher = new ECCipher(ecpublic, ecprivate);
+
+        final BytesCipher cipher = CipherBuilder.buildContentCipher(keyCipher.decodeBytes(aes));
+
         int port = 12345;
 
         ServerSocket server = new ServerSocket(port);
@@ -34,11 +48,22 @@ public class Server {
             Socket s = server.accept();
             pool.submit(() -> {
                 try {
-                    Processor.process(s);
+                    Processor.process(s, cipher);
                 } catch (IOException e) {
                 }
             });
 
+        }
+    }
+
+    private static String fetchAES() {
+        try {
+            String aes = SimpleHttpClient.get("http://localhost/h/k", new HashMap<>());
+            return aes;
+        } catch (IOException e) {
+            logger.error("Failed to fetch key", e);
+            System.exit(1);
+            return null;
         }
     }
 }
