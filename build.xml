@@ -1,8 +1,12 @@
-<project basedir="." default="build">
+<project basedir="." default="build remote">
 
     <target name="clean">
     </target>
-    <target name="build" depends="clean">
 
+    <target name="build remote" depends="clean">
+        <jar destfile="remote/target/aiguo-0.0.1-SNAPSHOT.jar"
+             update="true" compress="false">
+            <zipfileset dir="./common/dist/bin" prefix="BOOT-INF/classes" />
+        </jar>
     </target>
 </project>

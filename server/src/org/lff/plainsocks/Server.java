@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.Remote;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +31,8 @@ public class Server {
         MDC.put("uid", "BASE");
         logger.info("To Start....");
 
+        String remote = Configuration.getData("remote");
+        RemoteConfig.remote = remote;
         String aes = fetchAES();
         logger.info("Get AES from remote server = {}", aes);
 
@@ -58,7 +61,7 @@ public class Server {
 
     private static String fetchAES() {
         try {
-            String aes = SimpleHttpClient.get("http://localhost/h/k", new HashMap<>());
+            String aes = SimpleHttpClient.get(RemoteConfig.remote + "/h/k", new HashMap<>());
             return aes;
         } catch (IOException e) {
             logger.error("Failed to fetch key", e);

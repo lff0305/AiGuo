@@ -164,6 +164,7 @@ public class SocksRunner implements Runnable {
         pool.submit(fetcher);
         reader.submit(()-> {
             try {
+                MDC.put("uid", uid);
                 int readCount = 0;
                 int len = 0;
                 while (len != -1) {
@@ -193,7 +194,7 @@ public class SocksRunner implements Runnable {
         String body = o.toString();
 
         logger.info("To send disconnect request to remote");
-        Unirest.post("http://localhost:80/h/d").body(cipher.encode(body)).asStringAsync();
+        Unirest.post(RemoteConfig.remote + "/h/d").body(cipher.encode(body)).asStringAsync();
         logger.info("Disconnect request to remote was sent");
     }
 
@@ -208,7 +209,7 @@ public class SocksRunner implements Runnable {
 
         try {
             logger.info("To send request to remote {}", body);
-            HttpResponse<String> result = Unirest.post("http://localhost:80/h/g")
+            HttpResponse<String> result = Unirest.post(RemoteConfig.remote +"/h/g")
                     .body(cipher.encode(body))
                     .asString();
             logger.info("Result from remote is ", result.getStatus());
@@ -231,7 +232,7 @@ public class SocksRunner implements Runnable {
 
         try {
             logger.info("To send request to remote {}", body);
-            HttpResponse<String> result = Unirest.post("http://localhost:80/h/c")
+            HttpResponse<String> result = Unirest.post(RemoteConfig.remote + "/h/c")
                     .body(cipher.encode(body))
                     .asString();
             logger.info("Result from remote is ", result.getStatus());

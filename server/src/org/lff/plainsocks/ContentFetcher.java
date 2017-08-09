@@ -78,7 +78,7 @@ public class ContentFetcher implements Runnable{
 //                HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
 //                        .body(cipher.encode(body))
 //                        .asString();
-                String result = SimpleHttpClient.post("http://localhost:80/h/p", new HashMap<>(), cipher.encode(body));
+                String result = SimpleHttpClient.post(RemoteConfig.remote + "/h/p", new HashMap<>(), cipher.encode(body));
                 logger.info("Finished fetch request");
                 String responseBody = result; //.getBody();
                 logger.info("Received fetch len = {}", responseBody.length());
