@@ -5,4 +5,10 @@ package org.lff.plainsocks;
  */
 public class RemoteConfig {
     public static String remote;
+    public static String keyUri;
+    public static String base;
+
+    public static String getKeyURL() {
+        return remote + "/" +  keyUri;
+    }
 }

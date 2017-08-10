@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
  * @datetime Jul 31 2017 16:50
  */
 @Controller
-@RequestMapping("/h")
+@RequestMapping("${uri.base}")
 public class ItemController {
 
     @Autowired
@@ -58,7 +58,7 @@ public class ItemController {
         keyCipher = new ECCipher(config.getEcPublic(), config.getEcPrivate());
     }
 
-    @RequestMapping(path = "/c", method = RequestMethod.POST)
+    @RequestMapping(path = "${uri.post}", method = RequestMethod.POST)
     public @ResponseBody
     String doit(@RequestBody String body) throws IOException {
         delayIfConfigured();
@@ -98,7 +98,7 @@ public class ItemController {
         return contentCipher.encode("OK");
     }
 
-    @RequestMapping(path = "/g", method = RequestMethod.POST)
+    @RequestMapping(path = "${uri.connect}", method = RequestMethod.POST)
     public @ResponseBody
     String connect(@RequestBody String body) {
         delayIfConfigured();
@@ -164,7 +164,7 @@ public class ItemController {
         return contentCipher.encode("OK");
     }
 
-    @RequestMapping(path = "/p", method = RequestMethod.POST)
+    @RequestMapping(path = "${uri.fetch}", method = RequestMethod.POST)
     public @ResponseBody String fetch(@RequestBody String body) {
         String uid = null;
         delayIfConfigured();
@@ -202,7 +202,7 @@ public class ItemController {
         return encoded;
     }
 
-    @RequestMapping(path = "/d", method = RequestMethod.POST)
+    @RequestMapping(path = "${uri.close}", method = RequestMethod.POST)
     public @ResponseBody
     String close(@RequestBody String body) {
         String uid = null;
@@ -231,7 +231,7 @@ public class ItemController {
         return contentCipher.encode("OK");
     }
 
-    @RequestMapping(path = "/k", method = RequestMethod.GET)
+    @RequestMapping(path = "${uri.key}", method = RequestMethod.GET)
     public @ResponseBody
     String key() {
         try {

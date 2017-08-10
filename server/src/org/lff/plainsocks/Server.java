@@ -33,6 +33,13 @@ public class Server {
 
         String remote = Configuration.getData("remote");
         RemoteConfig.remote = remote;
+
+        String base = Configuration.getData("uri.base");
+        RemoteConfig.base = base;
+
+        String keyUri = Configuration.getData("uri.key");
+        RemoteConfig.keyUri = keyUri;
+
         String aes = fetchAES();
         logger.info("Get AES from remote server = {}", aes);
 
@@ -61,7 +68,8 @@ public class Server {
 
     private static String fetchAES() {
         try {
-            String aes = SimpleHttpClient.get(RemoteConfig.remote + "/h/k", new HashMap<>());
+            logger.info("Getting key from {}", RemoteConfig.getKeyURL());
+            String aes = SimpleHttpClient.get(RemoteConfig.getKeyURL(), new HashMap<>());
             return aes;
         } catch (IOException e) {
             logger.error("Failed to fetch key", e);
