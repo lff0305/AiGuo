@@ -31,14 +31,7 @@ public class Server {
         MDC.put("uid", "BASE");
         logger.info("To Start....");
 
-        String remote = Configuration.getData("remote");
-        RemoteConfig.remote = remote;
-
-        String base = Configuration.getData("uri.base");
-        RemoteConfig.base = base;
-
-        String keyUri = Configuration.getData("uri.key");
-        RemoteConfig.keyUri = keyUri;
+        RemoteConfig.init();
 
         String aes = fetchAES();
         logger.info("Get AES from remote server = {}", aes);
