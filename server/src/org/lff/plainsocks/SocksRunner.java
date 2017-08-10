@@ -3,6 +3,7 @@ package org.lff.plainsocks;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import org.apache.http.protocol.HTTP;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
 import org.lff.NamedThreadFactory;
@@ -194,7 +195,7 @@ public class SocksRunner implements Runnable {
         String body = o.toString();
 
         logger.info("To send disconnect request to remote");
-        Unirest.post(RemoteConfig.remote + "/h/d").body(cipher.encode(body)).asStringAsync();
+        Unirest.post(RemoteConfig.getCloseURL()).body(cipher.encode(body)).asStringAsync();
         logger.info("Disconnect request to remote was sent");
     }
 
@@ -209,9 +210,13 @@ public class SocksRunner implements Runnable {
 
         try {
             logger.info("To send request to remote {}", body);
-            HttpResponse<String> result = Unirest.post(RemoteConfig.remote +"/h/g")
+            HttpResponse<String> result = Unirest.post(RemoteConfig.getConnectURL())
                     .body(cipher.encode(body))
                     .asString();
+            if (result.getStatus() != 200) {
+                logger.error("Failed to connect {} {}", result.getStatus() , result.getBody());
+                return "Failed to connect";
+            }
             logger.info("Result from remote is ", result.getStatus());
             return cipher.decode(result.getBody());
         } catch (UnirestException e) {
@@ -232,7 +237,7 @@ public class SocksRunner implements Runnable {
 
         try {
             logger.info("To send request to remote {}", body);
-            HttpResponse<String> result = Unirest.post(RemoteConfig.remote + "/h/c")
+            HttpResponse<String> result = Unirest.post(RemoteConfig.getPostURL())
                     .body(cipher.encode(body))
                     .asString();
             logger.info("Result from remote is ", result.getStatus());

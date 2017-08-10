@@ -6,9 +6,13 @@ import org.lff.Configuration;
  * Created by liuff on 2017/8/9 15:05
  */
 public class RemoteConfig {
-    public static String remote;
-    public static String keyUri;
-    public static String base;
+    private static String remote;
+    private static String keyUri;
+    private static String base;
+    private static String connectUri;
+    private static String postUri;
+    private static String fetchUri;
+    private static String closeUri;
 
     public static String getKeyURL() {
         return remote + "/" +  base + "/" + keyUri;
@@ -24,5 +28,31 @@ public class RemoteConfig {
         String keyUri = Configuration.getData("uri.key");
         RemoteConfig.keyUri = keyUri;
 
+        String connectUri = Configuration.getData("uri.connect");
+        RemoteConfig.connectUri = connectUri;
+
+        String postUri = Configuration.getData("uri.post");
+        RemoteConfig.postUri = postUri;
+
+        String fetchUri = Configuration.getData("uri.fetch");
+        RemoteConfig.fetchUri = fetchUri;
+
+        String closeUri = Configuration.getData("uri.close");
+        RemoteConfig.closeUri = closeUri;
+    }
+
+    public static String getConnectURL() {
+        return remote + "/" +  base + "/" + connectUri;
+    }
+
+    public static String getPostURL() {
+        return remote + "/" +  base + "/" + postUri;
+    }
+
+    public static String getFetchURL() {
+        return remote + "/" +  base + "/" + fetchUri;
+    }
+    public static String getCloseURL() {
+        return remote + "/" +  base + "/" + closeUri;
     }
 }
