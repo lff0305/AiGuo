@@ -166,6 +166,8 @@ public class ItemController {
 
     @RequestMapping(path = "${uri.fetch}", method = RequestMethod.POST)
     public @ResponseBody String fetch(@RequestBody String body) {
+        long l0 = System.currentTimeMillis();
+        logger.info("Fetch entered");
         String uid = null;
         delayIfConfigured();
         try {
@@ -174,6 +176,7 @@ public class ItemController {
             return contentCipher.encode(FetchVO.buildError().getBytes());
         }
 
+        logger.info("Start to pull");
         ConcurrentLinkedQueue<byte[]> queue = bufferMap.get(uid);
         if (queue == null) {
             return contentCipher.encode(FetchVO.noContent().getBytes());
@@ -181,8 +184,9 @@ public class ItemController {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
+        logger.info("poll0 entered");
         byte[] buffer = queue.poll();
-
+        logger.info("poll0 finished");
         if (buffer == null) {
             logger.info("Nothing to fetch, exit.");
             return contentCipher.encode(FetchVO.noContent().getBytes());
@@ -199,6 +203,7 @@ public class ItemController {
         logger.info("Fetch Result = " + bytes.length);
         String encoded = contentCipher.encode(FetchVO.build(bytes).getBytes());
         logger.info("Encoded length = {}", encoded.length());
+        logger.info("Fetch returned in {}", (System.currentTimeMillis() - l0));
         return encoded;
     }
 

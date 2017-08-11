@@ -2,6 +2,8 @@ package org.lff.aiguo.vo;
 
 import org.json.JSONObject;
 
+import java.util.Base64;
+
 /**
  * @author Feifei Liu
  * @datetime Aug 04 2017 11:34
@@ -37,10 +39,14 @@ public class FetchVO {
     }
 
     public String toJSON() {
+        long s0 = System.currentTimeMillis();
         JSONObject o = new JSONObject();
         o.put("status", status);
-        o.put("content", content);
-        return o.toString();
+        o.put("content", Base64.getEncoder().encodeToString(content));
+        String s = o.toString();
+        long s1 = System.currentTimeMillis();
+        System.out.println(">> " + (s1 - s0));
+        return s;
     }
 
     static FetchVO error = new FetchVO(-1, new byte[]{});

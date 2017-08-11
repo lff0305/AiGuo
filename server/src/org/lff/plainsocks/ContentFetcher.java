@@ -74,12 +74,13 @@ public class ContentFetcher implements Runnable{
 
                 String body = o.toString();
 
+                long l0 = System.currentTimeMillis();
                 logger.info("Start to post fetch request");
 //                HttpResponse<String> result = Unirest.post("http://localhost:80/h/p")
 //                        .body(cipher.encode(body))
 //                        .asString();
                 String result = SimpleHttpClient.post(RemoteConfig.getFetchURL(), new HashMap<>(), cipher.encode(body));
-                logger.info("Finished fetch request");
+                logger.info("Finished fetch request in {}", (System.currentTimeMillis() - l0));
                 String responseBody = result; //.getBody();
                 logger.info("Received fetch len = {}", responseBody.length());
                 String json = cipher.decode(responseBody);
@@ -91,7 +92,7 @@ public class ContentFetcher implements Runnable{
                 }
                 if (status == -2) {
                     emptyCount ++ ;
-                    logger.info("Result is empty {}", emptyCount);
+                    logger.info("Result is empty {} stopped = {}", emptyCount, stopped.get());
                     try {
                         Thread.sleep(emptyCount * 100);
                     } catch (InterruptedException e) {
@@ -101,12 +102,8 @@ public class ContentFetcher implements Runnable{
                 }
                 if (status == 0) {
                     emptyCount = 0;
-                    JSONArray array = jsonObject.getJSONArray("content");
-                    int length = array.length();
-                    byte[] buffer = new byte[length];
-                    for (int i=0; i<length; i++) {
-                        buffer[i] = (byte)array.getInt(i);
-                    }
+                    String content = jsonObject.getString("content");
+                    byte[] buffer = Base64.getDecoder().decode(content);
                     try {
                         outputStream.write(buffer);
                         outputStream.flush();

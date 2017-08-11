@@ -1,7 +1,11 @@
 package org.lff;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -12,6 +16,8 @@ import java.util.Base64;
  * @datetime Jul 31 2017 16:25
  */
 public class SimpleAESCipher implements BytesCipher {
+
+    private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String KEY = "BR58LXQNtb5O6dN70wA6QA==";
 
@@ -28,12 +34,15 @@ public class SimpleAESCipher implements BytesCipher {
 
     @Override
     public String encode(byte[] source) {
+        long l0 = System.currentTimeMillis();
         try {
             Cipher d = Cipher.getInstance("AES");
             d.init(Cipher.ENCRYPT_MODE, secretKey);
             return Base64.getEncoder().encodeToString(d.doFinal(source));
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            logger.info("AES {} bytes took {}", source.length, (System.currentTimeMillis() - l0));
         }
         return null;
     }

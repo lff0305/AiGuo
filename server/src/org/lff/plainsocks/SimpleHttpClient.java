@@ -137,7 +137,7 @@ public class SimpleHttpClient {
         // Read response
         BufferedReader br = null;
         StringBuffer response = new StringBuffer();
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(1024 * 1024 * 16);
         byte[] buffer = new byte[64 * 1024];
         try {
             logger.info("Start to read response");
@@ -150,7 +150,7 @@ public class SimpleHttpClient {
             int len = 0;
             while (len != -1) {
                 len = inputStream.read(buffer);
-                // logger.info("Read a line {}", len);
+               // logger.info("Read {} bytes", len);
                 if (len == -1) {
                     break;
                 }
@@ -165,6 +165,7 @@ public class SimpleHttpClient {
                     //ignores
                 }
             }
+            logger.info("Start to read response");
         }
     }
 
