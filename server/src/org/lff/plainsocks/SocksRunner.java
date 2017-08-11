@@ -165,7 +165,7 @@ public class SocksRunner implements Runnable {
         pool.submit(fetcher);
         reader.submit(()-> {
             try {
-                MDC.put("uid", uid);
+                MDC.put("uid", String.valueOf(uid.hashCode()));
                 int readCount = 0;
                 int len = 0;
                 while (len != -1) {
