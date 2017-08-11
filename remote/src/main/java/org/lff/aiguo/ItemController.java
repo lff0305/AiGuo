@@ -62,10 +62,8 @@ public class ItemController {
     public @ResponseBody
     String doit(@RequestBody String body) throws IOException {
         delayIfConfigured();
-        logger.info("Getting a request for work");
         String json = contentCipher.decode(body);
         JSONObject o = new JSONObject(json);
-        logger.info("Getting a work request json {}", o.toString());
         byte[] buffer = new byte[]{};
         String strBuffer = o.optString("buffer");
         if (strBuffer != null) {
@@ -77,6 +75,8 @@ public class ItemController {
         }
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
+        logger.info("Getting a work request json {}", o.toString());
+
         Socket worker = socketsMap.get(uid);
 
         if (worker == null) {
