@@ -11,6 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -26,7 +27,7 @@ public class SimpleHttpClient {
 
     /**
      * POST request to url.
-     * @param header headers
+     * @param headers headers
      * @param body body
      * @return response body, if successful
      */
@@ -82,7 +83,7 @@ public class SimpleHttpClient {
 
     /**
      * GET request to url.
-     * @param header headers
+     * @param headers headers
      * @return response body, if successful
      */
     public static String get(String httpurl, Map<String, String> headers) throws IOException {
@@ -165,7 +166,7 @@ public class SimpleHttpClient {
                     //ignores
                 }
             }
-            logger.info("Start to read response");
+            logger.info("Finished bto read response");
         }
     }
 
@@ -207,5 +208,13 @@ public class SimpleHttpClient {
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (Exception e) {
         }
+    }
+
+    public static void main(String[] argu) throws IOException {
+        long start = System.currentTimeMillis();
+        String s = post("http://localhost/test/f", new HashMap<>(), " ");
+        System.out.println(s.length());
+        long end = System.currentTimeMillis();
+        System.out.println(end - start);
     }
 }
