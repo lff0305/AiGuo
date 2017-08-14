@@ -35,7 +35,7 @@ public class ContentReader implements Runnable {
             Thread.sleep(100);
         } catch (InterruptedException e) {
         }
-        byte[] buffer = new byte[1024 * 1024];
+        byte[] buffer = new byte[64 * 1024];
         int len = 0;
         while (len > -1) {
             try {

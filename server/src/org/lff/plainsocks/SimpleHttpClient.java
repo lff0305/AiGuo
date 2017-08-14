@@ -212,7 +212,7 @@ public class SimpleHttpClient {
 
     public static void main(String[] argu) throws IOException {
         long start = System.currentTimeMillis();
-        String s = post("http://localhost/test/f", new HashMap<>(), " ");
+        String s = post("http://127.0.0.1/test/f", new HashMap<>(), " ");
         System.out.println(s.length());
         long end = System.currentTimeMillis();
         System.out.println(end - start);

@@ -194,6 +194,9 @@ public class ItemController {
         logger.info("Available bytes {}", buffer.length);
         while (buffer != null) {
             out.write(buffer, 0, buffer.length);
+            if (out.size() > 1024 * 1024) {
+                break;
+            }
             buffer = queue.poll();
         }
 
