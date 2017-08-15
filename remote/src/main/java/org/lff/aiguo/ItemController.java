@@ -142,9 +142,10 @@ public class ItemController {
             logger.info("TO start to connect to {}", remote );
             worker.setKeepAlive(false);
             worker.setSoTimeout(15000);
-            worker.setReceiveBufferSize(128 * 1024);
+            worker.setSendBufferSize(64 * 1024);
+            worker.setReceiveBufferSize(64 * 1024);
             worker.connect(remote);
-            logger.info("Connect to {} {} successfully.", uid, remote );
+            logger.info("Connect to {} {} successfully. Buf size = {}", uid, remote, worker.getReceiveBufferSize());
         } catch (Exception e) {
             logger.info("Failed to connect to {} {} ", uid, remote, e);
             return contentCipher.encode("Failed to connect".getBytes());
