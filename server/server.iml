@@ -18,5 +18,14 @@
     <orderEntry type="library" name="unirest-java-1.4.9" level="project" />
     <orderEntry type="library" name="logback" level="project" />
     <orderEntry type="library" name="commons-http" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../common/lib/netty-all-4.1.12.Final.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>

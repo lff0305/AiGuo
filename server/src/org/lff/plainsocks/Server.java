@@ -1,5 +1,11 @@
 package org.lff.plainsocks;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.lff.BytesCipher;
 import org.lff.Configuration;
 import org.lff.ECCipher;
@@ -10,9 +16,6 @@ import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.rmi.Remote;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,17 +48,29 @@ public class Server {
 
         int port = 12345;
 
-        ServerSocket server = new ServerSocket(port);
-        logger.info("Listened on port {}", port);
-        while (true) {
-            Socket s = server.accept();
-            pool.submit(() -> {
-                try {
-                    Processor.process(s, cipher);
-                } catch (IOException e) {
-                }
-            });
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(SocketChannel ch)
+                                throws Exception {
+                            // 注册handler
+                            ch.pipeline().addLast(new SocksServerInitializer(cipher));
+                        }
+                    }).option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
 
+            ChannelFuture f = b.bind(port).sync();
+
+            f.channel().closeFuture().sync();
+        } catch (Exception e) {
+            logger.error("Failed to init", e);
+        } finally {
+            workerGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully();
         }
     }
 

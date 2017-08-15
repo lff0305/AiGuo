@@ -107,7 +107,7 @@ public class ItemController {
         String json = contentCipher.decode(body);
         JSONObject o = new JSONObject(json);
         logger.info("Getting a connect request json {}", o.toString());
-        byte[] dst = Base64.getDecoder().decode(o.getString("dist"));
+        String dst = o.getString("dist");
         int atyp = o.getInt("atyp");
         int port = o.getInt("port");
         String uid = o.optString("uid");
@@ -118,20 +118,8 @@ public class ItemController {
 
         MDC.put("uid", String.valueOf(uid.hashCode()));
         try {
-            switch (atyp) {
-                case 0x01: //IP V4
-                    address = InetAddress.getByAddress(dst);
-                    break;
-                case 0x03: //domain
-                    String h = new String(dst);
-                    address = InetAddress.getByName(h);
-                    break;
-                case 0x04: //IP V6
-                    address = InetAddress.getByAddress(dst);
-                    break;
-                default: {
-                }
-            }
+
+            address = InetAddress.getByName(dst);
         } catch (Exception e) {
             return contentCipher.encode("Invalid Address");
         }
