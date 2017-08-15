@@ -1,5 +1,6 @@
 package org.lff.aiguo;
 
+import io.netty.channel.ChannelFuture;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
 import org.lff.ECCipher;
@@ -40,7 +41,7 @@ public class ItemController {
     @Autowired
     RemoteConfig config;
 
-    static ConcurrentHashMap<String, Socket> socketsMap = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, ResponseHandler> channelMap = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, ConcurrentLinkedQueue<byte[]>> bufferMap = new ConcurrentHashMap<>();
 
     private Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,19 +78,17 @@ public class ItemController {
         MDC.put("uid", String.valueOf(uid.hashCode()));
         logger.info("Getting a work request json {}", o.toString());
 
-        Socket worker = socketsMap.get(uid);
+        ResponseHandler worker = channelMap.get(uid);
 
         if (worker == null) {
             return contentCipher.encode("ERR");
         }
 
-        try {
-            if (buffer != null) {
-                logger.info("Writting {} bytes" , buffer.length);
-                worker.getOutputStream().write(buffer, 0, buffer.length);
+        if (buffer != null) {
+            logger.info("Writting {} bytes" , buffer.length);
+            if (!worker.send(buffer)) {
+                return contentCipher.encode("ERR");
             }
-        } catch (IOException e) {
-            return contentCipher.encode("ERR");
         }
 
 
@@ -136,27 +135,12 @@ public class ItemController {
             return contentCipher.encode("Invalid Address");
         }
 
-        Socket worker = new Socket();
-        InetSocketAddress remote = new InetSocketAddress(address, port);
-        try {
-            logger.info("TO start to connect to {}", remote );
-            worker.setKeepAlive(false);
-            worker.setSoTimeout(15000);
-            worker.setSendBufferSize(64 * 1024);
-            worker.setReceiveBufferSize(64 * 1024);
-            worker.connect(remote);
-            logger.info("Connect to {} {} successfully. Buf size = {}", uid, remote, worker.getReceiveBufferSize());
-        } catch (Exception e) {
-            logger.info("Failed to connect to {} {} ", uid, remote, e);
-            return contentCipher.encode("Failed to connect".getBytes());
-        }
-
-        socketsMap.put(uid, worker);
         ConcurrentLinkedQueue out = new ConcurrentLinkedQueue();
         try {
             bufferMap.put(uid, out);
-            ContentReader reader = new ContentReader(uid, worker.getInputStream(), out);
-            pool.submit(reader);
+            NettyReader reader = new NettyReader(uid, address, port, out);
+            ResponseHandler channel = reader.connect();
+            channelMap.put(uid, channel);
         } catch (Exception e) {
             logger.error("Failed to start reader", e);
             return contentCipher.encode("Failed to start reader".getBytes());
@@ -228,13 +212,10 @@ public class ItemController {
         if (queue != null) {
             queue.clear();
         }
-        Socket worker = socketsMap.remove(uid);
-        try {
-            if (worker != null) {
-                worker.close();
-                logger.info("Worker closed for {}", uid);
-            }
-        } catch (IOException e) {
+        ResponseHandler worker = channelMap.remove(uid);
+        if (worker != null) {
+            worker.close();
+            logger.info("Worker closed for {}", uid);
         }
 
         return contentCipher.encode("OK");

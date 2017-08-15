@@ -54,10 +54,18 @@
 
 		<dependency>
 			<groupId>common</groupId>
-			<artifactId>oirg.lff</artifactId>
+			<artifactId>org.lff</artifactId>
 			<version>0.0.1</version>
 			<scope>system</scope>
 			<systemPath>${project.basedir}/../common/dist/common.jar</systemPath>
+		</dependency>
+
+		<dependency>
+			<groupId>netty</groupId>
+			<artifactId>org.netty</artifactId>
+			<version>4.1.12</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/../common/lib/netty-all-4.1.12.Final.jar</systemPath>
 		</dependency>
 
 	</dependencies>
