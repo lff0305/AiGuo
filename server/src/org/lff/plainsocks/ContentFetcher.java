@@ -4,6 +4,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
 import org.lff.SimpleAESCipher;
@@ -91,7 +92,7 @@ public class ContentFetcher implements Runnable{
                     return;
                 }
                 if (status == -2) {
-                    emptyCount ++ ;
+                    emptyCount++;
                     logger.info("Result is empty {} stopped = {}", emptyCount, stopped.get());
                     try {
                         Thread.sleep(emptyCount * 100);
@@ -112,6 +113,9 @@ public class ContentFetcher implements Runnable{
                         logger.info("Write to output failed, closed ?");
                     }
                 }
+            } catch (JSONException e) {
+                logger.error("Failed to parse json", e);
+                return;
             } catch (Exception e) {
                 return;
             }

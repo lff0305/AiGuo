@@ -40,10 +40,13 @@ public class FetchVO {
 
     public String toJSON() {
         long s0 = System.currentTimeMillis();
-        JSONObject o = new JSONObject();
-        o.put("status", status);
-        o.put("content", Base64.getEncoder().encodeToString(content));
-        String s = o.toString();
+        StringBuffer sb = new StringBuffer();
+        sb.append("{ \"status\": ");
+        sb.append(status);
+        sb.append(", \"content\":\"");
+        sb.append(Base64.getEncoder().encodeToString(content));
+        sb.append("\"}");
+        String s = sb.toString();
         long s1 = System.currentTimeMillis();
         System.out.println(">> " + (s1 - s0));
         return s;
