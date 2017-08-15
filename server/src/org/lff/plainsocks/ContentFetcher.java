@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @author Feifei Liu
@@ -106,7 +109,7 @@ public class ContentFetcher implements Runnable{
                     String content = jsonObject.getString("content");
                     byte[] buffer = Base64.getDecoder().decode(content);
                     try {
-                        outputStream.write(buffer);
+                        outputStream.write(uncompress(buffer));
                         outputStream.flush();
                         buffer = null;
                     } catch (Exception e) {
@@ -127,5 +130,25 @@ public class ContentFetcher implements Runnable{
             s.acquire(1);
         } catch (InterruptedException e) {
         }
+    }
+
+    public byte[] uncompress(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        try {
+            GZIPInputStream ungzip = new GZIPInputStream(in);
+            byte[] buffer = new byte[256];
+            int n;
+            while ((n = ungzip.read(buffer)) >= 0) {
+                out.write(buffer, 0, n);
+            }
+        } catch (IOException e) {
+            logger.error("gzip uncompress error.", e);
+        }
+
+        return out.toByteArray();
     }
 }

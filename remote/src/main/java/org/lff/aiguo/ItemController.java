@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Feifei Liu
@@ -169,32 +170,37 @@ public class ItemController {
 
         int max = 16 * 1024 + (int)Math.random() * 112 * 1024;
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        GZIPOutputStream out;
 
-        logger.info("poll0 entered");
-        byte[] buffer = queue.poll();
-        logger.info("poll0 finished");
-        if (buffer == null) {
-            logger.info("Nothing to fetch, exit.");
-            return contentCipher.encode(FetchVO.noContent().getBytes());
-        }
-        logger.info("Available bytes {}", buffer.length);
-        while (buffer != null) {
-            out.write(buffer, 0, buffer.length);
-            if (out.size() > max) {
-                break;
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            out = new GZIPOutputStream(bout);
+
+            logger.info("poll0 entered");
+            byte[] buffer = queue.poll();
+            logger.info("poll0 finished");
+            if (buffer == null) {
+                logger.info("Nothing to fetch, exit.");
+                return contentCipher.encode(FetchVO.noContent().getBytes());
             }
-            buffer = queue.poll();
+            logger.info("Available bytes {}", buffer.length);
+            while (buffer != null) {
+                out.write(buffer, 0, buffer.length);
+                if (bout.size() > max) {
+                    break;
+                }
+                buffer = queue.poll();
+            }
+            out.close();
+            byte[] bytes = bout.toByteArray();
+            logger.info("Fetch Result = " + bytes.length);
+            String encoded = contentCipher.encode(FetchVO.build(bytes).getBytes());
+            logger.info("Encoded length = {}", encoded.length());
+            logger.info("Fetch returned in {}", (System.currentTimeMillis() - l0));
+            return encoded;
+        } catch (Exception e) {
+            return contentCipher.encode("Failed to fetch".getBytes());
         }
-
-
-
-        byte[] bytes = out.toByteArray();
-        logger.info("Fetch Result = " + bytes.length);
-        String encoded = contentCipher.encode(FetchVO.build(bytes).getBytes());
-        logger.info("Encoded length = {}", encoded.length());
-        logger.info("Fetch returned in {}", (System.currentTimeMillis() - l0));
-        return encoded;
     }
 
     @RequestMapping(path = "${uri.close}", method = RequestMethod.POST)
