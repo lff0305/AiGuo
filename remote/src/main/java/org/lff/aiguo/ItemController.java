@@ -167,6 +167,8 @@ public class ItemController {
             return contentCipher.encode(FetchVO.noContent().getBytes());
         }
 
+        int max = 16 * 1024 + (int)Math.random() * 112 * 1024;
+
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         logger.info("poll0 entered");
@@ -179,7 +181,7 @@ public class ItemController {
         logger.info("Available bytes {}", buffer.length);
         while (buffer != null) {
             out.write(buffer, 0, buffer.length);
-            if (out.size() > 1024 * 1024) {
+            if (out.size() > max) {
                 break;
             }
             buffer = queue.poll();

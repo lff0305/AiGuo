@@ -22,11 +22,7 @@ public class NettyReader {
     private static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static NioEventLoopGroup group = new NioEventLoopGroup();
-    private static Bootstrap b = new Bootstrap();
 
-    static {
-        b.group(group);
-    }
     private final InetAddress address;
     private final int port;
     private final String uid;
@@ -41,10 +37,10 @@ public class NettyReader {
 
     public ResponseHandler connect() {
         try {
-
+            Bootstrap b = new Bootstrap();
             ResponseHandler handler = new ResponseHandler(uid, out);
 
-            ChannelFuture channel = b
+            ChannelFuture channel = b.group(group)
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
@@ -78,10 +74,25 @@ class ResponseHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf result = (ByteBuf) msg;
-        byte[] buffer = new byte[result.readableBytes()];
+        int len = result.readableBytes();
+        byte[] buffer = new byte[len];
         logger.info("channelRead {} bytes", buffer.length);
         result.readBytes(buffer);
-        out.add(buffer);
+        int size = 16 * 1024;
+        int total = len / size;
+        for (int i=0; i< len / size; i++) {
+            byte[] b = new byte[size];
+            System.arraycopy(buffer, i * size, b, 0, size);
+            out.add(b);
+        }
+
+        int mod = len % size;
+        if (mod != 0) {
+            byte[] b = new byte[mod];
+            System.arraycopy(buffer, size * total, b, 0, mod);
+            out.add(b);
+        }
+
         result.release();
     }
 
