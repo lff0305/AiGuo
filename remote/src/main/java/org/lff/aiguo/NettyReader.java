@@ -23,6 +23,10 @@ public class NettyReader {
 
     private static NioEventLoopGroup group = new NioEventLoopGroup();
     private static Bootstrap b = new Bootstrap();
+
+    static {
+        b.group(group);
+    }
     private final InetAddress address;
     private final int port;
     private final String uid;
@@ -40,7 +44,7 @@ public class NettyReader {
 
             ResponseHandler handler = new ResponseHandler(uid, out);
 
-            ChannelFuture channel = b.group(group)
+            ChannelFuture channel = b
                     .channel(NioSocketChannel.class)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .handler(new ChannelInitializer<SocketChannel>() {
@@ -48,7 +52,8 @@ public class NettyReader {
                         public void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(handler);
                         }
-                    }).connect().await();
+                    }).connect(address, port).await();
+            logger.info("Channel to {} {} created.", address, port);
             return handler;
         } catch (Exception e) {
             logger.error("Error connect", e);
@@ -72,18 +77,17 @@ class ResponseHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        logger.info("HelloClientIntHandler.channelRead");
         ByteBuf result = (ByteBuf) msg;
         byte[] buffer = new byte[result.readableBytes()];
+        logger.info("channelRead {} bytes", buffer.length);
         result.readBytes(buffer);
         out.add(buffer);
         result.release();
     }
 
-    // 连接成功后，向server发送消息
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("HelloClientIntHandler.channelActive");
+        logger.info("channelActive");
         this.activeCtx = ctx;
     }
 
@@ -99,6 +103,7 @@ class ResponseHandler extends ChannelInboundHandlerAdapter {
     }
 
     public void close() {
+        logger.info("Closing {}", activeCtx);
         activeCtx.close();
     }
 }
