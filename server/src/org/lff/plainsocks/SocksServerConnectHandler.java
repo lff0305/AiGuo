@@ -43,11 +43,11 @@ public final class SocksServerConnectHandler extends
     private ByteArrayOutputStream _localOutStream;
     private String uid;
 
-    public SocksServerConnectHandler(BytesCipher cipher) {
+    public SocksServerConnectHandler(BytesCipher cipher, String uid) {
         this.cipher = cipher;
         this._remoteOutStream = new ByteArrayOutputStream(BUFFER_SIZE);
         this._localOutStream = new ByteArrayOutputStream(BUFFER_SIZE);
-        uid = UUID.randomUUID().toString();
+        this.uid = uid;
     }
 
     @Override
@@ -68,7 +68,7 @@ public final class SocksServerConnectHandler extends
                     @Override
                     public void operationComplete(ChannelFuture channelFuture) {
                         ctx.pipeline().remove(SocksServerConnectHandler.this);
-                        ctx.pipeline().addLast(new RelayHandler(ctx.channel()));
+                        ctx.pipeline().addLast(new RelayHandler(ctx.channel(), uid, cipher));
                     }
                 });
                 break;

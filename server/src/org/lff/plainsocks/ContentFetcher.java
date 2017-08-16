@@ -3,6 +3,7 @@ package org.lff.plainsocks;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import io.netty.channel.Channel;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,12 +39,12 @@ public class ContentFetcher implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private String uid;
-    private OutputStream outputStream;
+    private Channel outputStream;
     private AtomicBoolean stopped;
     private Map<Long, byte[]> window = new HashMap<>();
     private final BytesCipher cipher;
 
-    public ContentFetcher(BytesCipher cipher, String uid, OutputStream outputStream, AtomicBoolean stopped) {
+    public ContentFetcher(BytesCipher cipher, String uid, Channel outputStream, AtomicBoolean stopped) {
         this.uid = uid;
         this.cipher = cipher;
         this.outputStream = outputStream;

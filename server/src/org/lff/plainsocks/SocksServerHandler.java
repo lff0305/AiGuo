@@ -11,6 +11,8 @@ import org.lff.BytesCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 /**
  * @author Feifei Liu
  * @datetime Aug 15 2017 17:33
@@ -45,7 +47,7 @@ public final class SocksServerHandler extends
             case SOCKS4a:
                 Socks4CommandRequest socksV4CmdRequest = (Socks4CommandRequest) socksRequest;
                 if (socksV4CmdRequest.type() == Socks4CommandType.CONNECT) {
-                    ctx.pipeline().addLast(new SocksServerConnectHandler(cipher));
+                    ctx.pipeline().addLast(new SocksServerConnectHandler(cipher, UUID.randomUUID().toString()));
                     ctx.pipeline().remove(this);
                     ctx.fireChannelRead(socksRequest);
                 } else {
@@ -65,7 +67,7 @@ public final class SocksServerHandler extends
                 } else if (socksRequest instanceof Socks5CommandRequest) {
                     Socks5CommandRequest socks5CmdRequest = (Socks5CommandRequest) socksRequest;
                     if (socks5CmdRequest.type() == Socks5CommandType.CONNECT) {
-                        ctx.pipeline().addLast(new SocksServerConnectHandler(cipher));
+                        ctx.pipeline().addLast(new SocksServerConnectHandler(cipher, UUID.randomUUID().toString()));
                         ctx.pipeline().remove(this);
                         ctx.fireChannelRead(socksRequest);
                     } else {

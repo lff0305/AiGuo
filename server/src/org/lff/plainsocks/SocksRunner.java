@@ -161,7 +161,7 @@ public class SocksRunner implements Runnable {
         }
         byte[] buffer = new byte[1024 * 32];
         AtomicBoolean exited = new AtomicBoolean(false);
-        ContentFetcher fetcher = new ContentFetcher(cipher, uid, outputStream, exited);
+        ContentFetcher fetcher = new ContentFetcher(cipher, uid, null, exited);
         pool.submit(fetcher);
         reader.submit(()-> {
             try {
