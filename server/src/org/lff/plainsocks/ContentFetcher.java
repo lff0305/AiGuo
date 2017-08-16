@@ -3,6 +3,9 @@ package org.lff.plainsocks;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.Channel;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -110,11 +113,14 @@ public class ContentFetcher implements Runnable{
                     String content = jsonObject.getString("content");
                     byte[] buffer = Base64.getDecoder().decode(content);
                     try {
-                        outputStream.write(uncompress(buffer));
-                        outputStream.flush();
+                        byte[] msg = uncompress(buffer);
+                        ByteBuf b = ByteBufAllocator.DEFAULT.buffer();
+                        b.writeBytes(msg);
+                        logger.info("Write {} bytes to {} {} {}", msg.length, outputStream.isActive(), outputStream.remoteAddress(), outputStream.localAddress());
+                        outputStream.writeAndFlush(b).sync();
                         buffer = null;
                     } catch (Exception e) {
-                        logger.info("Write to output failed, closed ?");
+                        logger.error("Failed to write", e);
                     }
                 }
             } catch (JSONException e) {

@@ -68,10 +68,13 @@ public final class RelayHandler extends SimpleChannelInboundHandler<ByteBuf> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         logger.info("channel Inactive for {}", uid);
-        stopped.set(false);
+        stopped.set(true);
         if (relayChannel.isActive()) {
             SocksServerUtils.closeOnFlush(relayChannel);
         }
+        pool.submit(() -> {
+            disconnect(uid);
+        });
     }
 
     @Override
@@ -98,5 +101,16 @@ public final class RelayHandler extends SimpleChannelInboundHandler<ByteBuf> {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private void disconnect(String uid) {
+        JSONObject o = new JSONObject();
+        o.put("uid", uid);
+
+        String body = o.toString();
+
+        logger.info("To send disconnect request to remote");
+        Unirest.post(RemoteConfig.getCloseURL()).body(cipher.encode(body)).asStringAsync();
+        logger.info("Disconnect request to remote was sent");
     }
 }
