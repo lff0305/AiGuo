@@ -1,4 +1,4 @@
-package org.lff.plainsocks;
+package org.lff.netty;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
@@ -6,13 +6,14 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
 import org.lff.NamedThreadFactory;
+import org.lff.plainsocks.ContentFetcher;
+import org.lff.plainsocks.RemoteConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

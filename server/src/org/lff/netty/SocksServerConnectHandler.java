@@ -1,28 +1,22 @@
-package org.lff.plainsocks;
+package org.lff.netty;
 
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.socks.SocksCmdRequest;
-import io.netty.handler.codec.socks.SocksCmdResponse;
-import io.netty.handler.codec.socks.SocksCmdStatus;
 import io.netty.handler.codec.socksx.SocksMessage;
 import io.netty.handler.codec.socksx.v5.DefaultSocks5CommandResponse;
 import io.netty.handler.codec.socksx.v5.Socks5CommandRequest;
 import io.netty.handler.codec.socksx.v5.Socks5CommandStatus;
-import io.netty.util.concurrent.*;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
+import org.lff.plainsocks.RemoteConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Base64;
-import java.util.UUID;
 
 /**
  * @author Feifei Liu
@@ -120,7 +114,7 @@ public final class SocksServerConnectHandler extends
             logger.info("Result from remote is ", result.getStatus());
             return cipher.decode(result.getBody());
         } catch (UnirestException e) {
-            e.printStackTrace();
+            logger.error("Failed to connect", e);
         }
         return "Failed to connect";
     }

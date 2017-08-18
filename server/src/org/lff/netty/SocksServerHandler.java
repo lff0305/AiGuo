@@ -1,4 +1,4 @@
-package org.lff.plainsocks;
+package org.lff.netty;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

@@ -10,6 +10,7 @@ import org.lff.BytesCipher;
 import org.lff.Configuration;
 import org.lff.ECCipher;
 import org.lff.NamedThreadFactory;
+import org.lff.netty.SocksServerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;

@@ -1,13 +1,10 @@
-package org.lff.plainsocks;
+package org.lff.netty;
 
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.socks.SocksInitRequestDecoder;
 import io.netty.handler.codec.socks.SocksMessageEncoder;
 import io.netty.handler.codec.socksx.SocksPortUnificationServerHandler;
-import io.netty.util.concurrent.EventExecutorGroup;
 import org.lff.BytesCipher;
 
 /**

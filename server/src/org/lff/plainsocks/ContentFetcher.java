@@ -1,17 +1,11 @@
 package org.lff.plainsocks;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.Channel;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.lff.BytesCipher;
-import org.lff.SimpleAESCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -19,7 +13,6 @@ import org.slf4j.MDC;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Base64;
 import java.util.HashMap;
