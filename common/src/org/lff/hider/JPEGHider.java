@@ -5,8 +5,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
-import java.io.File;
-
+import java.io.*;
 
 
 import java.io.File;
@@ -16,6 +15,7 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.awt.image.DataBufferByte;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 
@@ -25,7 +25,7 @@ import javax.imageio.ImageIO;
 public class JPEGHider
 {
 
-    public static void main(String[] argu) {
+    public static void main(String[] argu) throws IOException {
         StringBuffer s = new StringBuffer();
         String source = "ab";
         for (int i=0; i<1024 * 1024; i++) {
@@ -34,10 +34,13 @@ public class JPEGHider
 
         System.out.println(s.toString().length());
 
-        new JPEGHider().encode("c:/users/feifeiliu/documents", "Inside", "jpg", "c1", s.toString());
-        String r = new JPEGHider().decode("c:/users/feifeiliu/documents", "c1");
-        System.out.println("Get = " + r);
-        System.out.println(r.equals(s.toString()));
+        byte[] encoded = new JPEGHider().encode("c:/users/feifeiliu/documents", "Inside.jpg", source);
+
+        byte[] r = new JPEGHider().decode(encoded);
+        System.out.println("Source = " +
+                Arrays.toString(source.getBytes()) + " " +
+                " Target = " +
+                Arrays.toString(r));
     }
 
     /*
@@ -56,16 +59,14 @@ public class JPEGHider
      *@param message  The text to hide in the image
      *@param type	  integer representing either basic or advanced encoding
      */
-    public boolean encode(String path, String original, String ext1, String stegan, String message)
-    {
-        String			file_name 	= image_path(path,original,ext1);
-        BufferedImage image_orig	= getImage(file_name);
+    public byte[] encode(String path, String original, String message) throws FileNotFoundException {
+        String			file_name 	= image_path(path,original);
+        BufferedImage image_orig	= getImage(new FileInputStream(file_name));
 
         //user space is not necessary for Encrypting
         BufferedImage image = user_space(image_orig);
-        image = add_text(image,message);
-
-        return(setImage(image,new File(image_path(path,stegan,"png")),"png"));
+        image = add_text(image, message);
+        return setImage(image, "jpg");
     }
 
     /*
@@ -74,20 +75,21 @@ public class JPEGHider
      *@param name The name of the image to extract the message from
      *@param type integer representing either basic or advanced encoding
      */
-    public String decode(String path, String name)
+    public byte[] decode(byte[] message)
     {
         byte[] decode;
         try
         {
             //user space is necessary for decrypting
-            BufferedImage image  = user_space(getImage(image_path(path,name,"png")));
+            BufferedImage image  = user_space(getImage(new ByteArrayInputStream(message)));
+            ImageIO.write(image, "jpg", new File("C:/temp/x.jpg"));
             decode = decode_text(get_byte_data(image));
-            return(new String(decode));
+            return decode;
         }
         catch(Exception e)
         {
             e.printStackTrace();
-            return "";
+            return null;
         }
     }
 
@@ -98,9 +100,9 @@ public class JPEGHider
      *@param ext	  The extension of the file
      *@return A String representing the complete path of a file
      */
-    private String image_path(String path, String name, String ext)
+    private String image_path(String path, String name)
     {
-        return path + "/" + name + "." + ext;
+        return path + File.separator + name;
     }
 
     /*
@@ -109,14 +111,13 @@ public class JPEGHider
      *@return A BufferedImage of the supplied file path
      *@see	Steganography.image_path
      */
-    private BufferedImage getImage(String f)
+    private BufferedImage getImage(InputStream f)
     {
         BufferedImage 	image	= null;
-        File 		file 	= new File(f);
 
         try
         {
-            image = ImageIO.read(file);
+            image = ImageIO.read(f);
         }
         catch(Exception ex)
         {
@@ -132,18 +133,19 @@ public class JPEGHider
      *@param ext	  The extension and thus format of the file to be saved
      *@return Returns true if the save is succesful
      */
-    private boolean setImage(BufferedImage image, File file, String ext)
+    private byte[] setImage(BufferedImage image, String ext)
     {
         try
         {
-            file.delete(); //delete resources used by the File
-            ImageIO.write(image, ext, file);
-            return true;
+            ByteArrayOutputStream o = new ByteArrayOutputStream();
+            ImageIO.write(image, "PNG", o);
+            o.close();
+            return o.toByteArray();
         }
         catch(Exception e)
         {
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
